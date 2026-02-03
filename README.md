@@ -1,2 +1,2 @@
-# pizzaria-demo
-Pizzaria demo 
+# Pizzaria Demo
+Landing page demo para pizzaria com CTA para WhatsApp
