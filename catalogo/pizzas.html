@@ -1,16 +1,128 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Pizzas</title>
+  <title>Pizzas | Pizzaria Demo</title>
   <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-  <main class="simple-page">
-    <h1>Pizzas</h1>
-    <p>Exemplo de conteúdo para a página de Pizzas.</p>
-    <a class="simple-link" href="../index.html">Voltar</a>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <span class="site-brand">Pizzaria Demo</span>
+      <a class="simple-link" href="../index.html">Voltar</a>
+    </div>
+  </header>
+
+  <main class="pizza-page">
+    <header class="pizza-page-header">
+      <h1>Pizzas Artesanais</h1>
+      <p>Escolha o sabor, ajuste a quantidade e finalize o pedido.</p>
+    </header>
+
+    <section class="pizza-grid" aria-label="Catálogo de pizzas">
+      <article class="pizza-card">
+        <img class="pizza-image" src="../assets/hero-pizza.jpg" alt="Pizza Margherita com manjericão fresco">
+        <div class="pizza-body">
+          <h2 class="pizza-title">Margherita Clássica</h2>
+          <p class="pizza-ingredients">Molho artesanal, mussarela, tomate italiano, manjericão e azeite extra virgem.</p>
+          <div class="pizza-meta">
+            <span class="pizza-price">R$ 39,90</span>
+            <div class="pizza-qty" aria-label="Quantidade Margherita">
+              <button class="qty-btn" type="button" aria-label="Diminuir quantidade">-</button>
+              <span class="qty-value">1</span>
+              <button class="qty-btn" type="button" aria-label="Aumentar quantidade">+</button>
+            </div>
+          </div>
+          <button class="pizza-order" type="button">Pedir</button>
+        </div>
+      </article>
+
+      <article class="pizza-card">
+        <img class="pizza-image" src="../assets/hero-pizza.jpg" alt="Pizza Pepperoni com queijo derretido">
+        <div class="pizza-body">
+          <h2 class="pizza-title">Pepperoni Supreme</h2>
+          <p class="pizza-ingredients">Mussarela, pepperoni crocante, molho rústico e finalização com orégano.</p>
+          <div class="pizza-meta">
+            <span class="pizza-price">R$ 44,90</span>
+            <div class="pizza-qty" aria-label="Quantidade Pepperoni">
+              <button class="qty-btn" type="button" aria-label="Diminuir quantidade">-</button>
+              <span class="qty-value">1</span>
+              <button class="qty-btn" type="button" aria-label="Aumentar quantidade">+</button>
+            </div>
+          </div>
+          <button class="pizza-order" type="button">Pedir</button>
+        </div>
+      </article>
+
+      <article class="pizza-card">
+        <img class="pizza-image" src="../assets/hero-pizza.jpg" alt="Pizza Quatro Queijos cremosa">
+        <div class="pizza-body">
+          <h2 class="pizza-title">Quatro Queijos</h2>
+          <p class="pizza-ingredients">Mussarela, gorgonzola, parmesão, provolone e toque de mel artesanal.</p>
+          <div class="pizza-meta">
+            <span class="pizza-price">R$ 46,90</span>
+            <div class="pizza-qty" aria-label="Quantidade Quatro Queijos">
+              <button class="qty-btn" type="button" aria-label="Diminuir quantidade">-</button>
+              <span class="qty-value">1</span>
+              <button class="qty-btn" type="button" aria-label="Aumentar quantidade">+</button>
+            </div>
+          </div>
+          <button class="pizza-order" type="button">Pedir</button>
+        </div>
+      </article>
+
+      <article class="pizza-card">
+        <img class="pizza-image" src="../assets/hero-pizza.jpg" alt="Pizza Frango com Catupiry dourada">
+        <div class="pizza-body">
+          <h2 class="pizza-title">Frango com Catupiry</h2>
+          <p class="pizza-ingredients">Frango desfiado temperado, catupiry cremoso, milho e cheiro-verde.</p>
+          <div class="pizza-meta">
+            <span class="pizza-price">R$ 42,90</span>
+            <div class="pizza-qty" aria-label="Quantidade Frango com Catupiry">
+              <button class="qty-btn" type="button" aria-label="Diminuir quantidade">-</button>
+              <span class="qty-value">1</span>
+              <button class="qty-btn" type="button" aria-label="Aumentar quantidade">+</button>
+            </div>
+          </div>
+          <button class="pizza-order" type="button">Pedir</button>
+        </div>
+      </article>
+
+      <article class="pizza-card">
+        <img class="pizza-image" src="../assets/hero-pizza.jpg" alt="Pizza Calabresa com cebola roxa">
+        <div class="pizza-body">
+          <h2 class="pizza-title">Calabresa Especial</h2>
+          <p class="pizza-ingredients">Calabresa defumada, cebola roxa, mussarela, molho artesanal e azeitonas.</p>
+          <div class="pizza-meta">
+            <span class="pizza-price">R$ 41,90</span>
+            <div class="pizza-qty" aria-label="Quantidade Calabresa">
+              <button class="qty-btn" type="button" aria-label="Diminuir quantidade">-</button>
+              <span class="qty-value">1</span>
+              <button class="qty-btn" type="button" aria-label="Aumentar quantidade">+</button>
+            </div>
+          </div>
+          <button class="pizza-order" type="button">Pedir</button>
+        </div>
+      </article>
+
+      <article class="pizza-card">
+        <img class="pizza-image" src="../assets/hero-pizza.jpg" alt="Pizza Veggie com vegetais frescos">
+        <div class="pizza-body">
+          <h2 class="pizza-title">Veggie Mediterrânea</h2>
+          <p class="pizza-ingredients">Abobrinha, berinjela, tomate, pimentões, mussarela e pesto de manjericão.</p>
+          <div class="pizza-meta">
+            <span class="pizza-price">R$ 43,90</span>
+            <div class="pizza-qty" aria-label="Quantidade Veggie Mediterrânea">
+              <button class="qty-btn" type="button" aria-label="Diminuir quantidade">-</button>
+              <span class="qty-value">1</span>
+              <button class="qty-btn" type="button" aria-label="Aumentar quantidade">+</button>
+            </div>
+          </div>
+          <button class="pizza-order" type="button">Pedir</button>
+        </div>
+      </article>
+    </section>
   </main>
 </body>
 </html>

@@ -1,16 +1,128 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Lanches</title>
+  <title>Lanches | Pizzaria Demo</title>
   <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-  <main class="simple-page">
-    <h1>Lanches</h1>
-    <p>Exemplo de conteúdo para a página de Lanches.</p>
-    <a class="simple-link" href="../index.html">Voltar</a>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <span class="site-brand">Pizzaria Demo</span>
+      <a class="simple-link" href="../index.html">Voltar</a>
+    </div>
+  </header>
+
+  <main class="pizza-page">
+    <header class="pizza-page-header">
+      <h1>Combos de Hambúrguer</h1>
+      <p>Combos completos com hambúrguer artesanal, batatas e bebida gelada.</p>
+    </header>
+
+    <section class="pizza-grid" aria-label="Catálogo de lanches">
+      <article class="pizza-card">
+        <img class="pizza-image" src="https://images.pexels.com/photos/19247564/pexels-photo-19247564.jpeg?cs=srgb&dl=pexels-jonathanborba-19247564.jpg&fm=jpg" alt="Combo com hambúrguer, batatas e bebida">
+        <div class="pizza-body">
+          <h2 class="pizza-title">Combo Smash Clássico</h2>
+          <p class="pizza-ingredients">Burger smash com cheddar, batatas crocantes e refrigerante 350ml.</p>
+          <div class="pizza-meta">
+            <span class="pizza-price">R$ 26,90</span>
+            <div class="pizza-qty" aria-label="Quantidade Combo Smash Clássico">
+              <button class="qty-btn" type="button" aria-label="Diminuir quantidade">-</button>
+              <span class="qty-value">1</span>
+              <button class="qty-btn" type="button" aria-label="Aumentar quantidade">+</button>
+            </div>
+          </div>
+          <button class="pizza-order" type="button">Pedir</button>
+        </div>
+      </article>
+
+      <article class="pizza-card">
+        <img class="pizza-image" src="https://images.pexels.com/photos/18713428/pexels-photo-18713428.jpeg?cs=srgb&dl=pexels-jonathanborba-18713428.jpg&fm=jpg" alt="Combo com hambúrguer, batatas e bebida gelada">
+        <div class="pizza-body">
+          <h2 class="pizza-title">Combo Bacon Cheddar</h2>
+          <p class="pizza-ingredients">Hambúrguer com bacon e cheddar, batatas rústicas e bebida à escolha.</p>
+          <div class="pizza-meta">
+            <span class="pizza-price">R$ 31,90</span>
+            <div class="pizza-qty" aria-label="Quantidade Combo Bacon Cheddar">
+              <button class="qty-btn" type="button" aria-label="Diminuir quantidade">-</button>
+              <span class="qty-value">1</span>
+              <button class="qty-btn" type="button" aria-label="Aumentar quantidade">+</button>
+            </div>
+          </div>
+          <button class="pizza-order" type="button">Pedir</button>
+        </div>
+      </article>
+
+      <article class="pizza-card">
+        <img class="pizza-image" src="https://images.pexels.com/photos/19247568/pexels-photo-19247568.jpeg?cs=srgb&dl=pexels-jonathanborba-19247568.jpg&fm=jpg" alt="Combo com hambúrguer, batatas e bebida">
+        <div class="pizza-body">
+          <h2 class="pizza-title">Combo Caprese</h2>
+          <p class="pizza-ingredients">Burger caprese, batatas fritas sequinhas e refrigerante lata.</p>
+          <div class="pizza-meta">
+            <span class="pizza-price">R$ 29,90</span>
+            <div class="pizza-qty" aria-label="Quantidade Combo Caprese">
+              <button class="qty-btn" type="button" aria-label="Diminuir quantidade">-</button>
+              <span class="qty-value">1</span>
+              <button class="qty-btn" type="button" aria-label="Aumentar quantidade">+</button>
+            </div>
+          </div>
+          <button class="pizza-order" type="button">Pedir</button>
+        </div>
+      </article>
+
+      <article class="pizza-card">
+        <img class="pizza-image" src="https://images.pexels.com/photos/19247569/pexels-photo-19247569.jpeg?cs=srgb&dl=pexels-jonathanborba-19247569.jpg&fm=jpg" alt="Combo com hambúrguer, batatas e bebida">
+        <div class="pizza-body">
+          <h2 class="pizza-title">Combo Supreme</h2>
+          <p class="pizza-ingredients">Hambúrguer alto com legumes frescos, batatas e bebida gelada.</p>
+          <div class="pizza-meta">
+            <span class="pizza-price">R$ 27,90</span>
+            <div class="pizza-qty" aria-label="Quantidade Combo Supreme">
+              <button class="qty-btn" type="button" aria-label="Diminuir quantidade">-</button>
+              <span class="qty-value">1</span>
+              <button class="qty-btn" type="button" aria-label="Aumentar quantidade">+</button>
+            </div>
+          </div>
+          <button class="pizza-order" type="button">Pedir</button>
+        </div>
+      </article>
+
+      <article class="pizza-card">
+        <img class="pizza-image" src="https://images.pexels.com/photos/2983101/pexels-photo-2983101.jpeg?cs=srgb&dl=pexels-jonathanborba-2983101.jpg&fm=jpg" alt="Combo com hambúrguer e batatas">
+        <div class="pizza-body">
+          <h2 class="pizza-title">Combo Duplo Cheddar</h2>
+          <p class="pizza-ingredients">Duplo burger com cheddar, batatas douradas e refrigerante 350ml.</p>
+          <div class="pizza-meta">
+            <span class="pizza-price">R$ 38,90</span>
+            <div class="pizza-qty" aria-label="Quantidade Combo Duplo Cheddar">
+              <button class="qty-btn" type="button" aria-label="Diminuir quantidade">-</button>
+              <span class="qty-value">1</span>
+              <button class="qty-btn" type="button" aria-label="Aumentar quantidade">+</button>
+            </div>
+          </div>
+          <button class="pizza-order" type="button">Pedir</button>
+        </div>
+      </article>
+
+      <article class="pizza-card">
+        <img class="pizza-image" src="https://images.pexels.com/photos/31176083/pexels-photo-31176083.jpeg?cs=srgb&dl=pexels-bon-appetit-2097728995-31176083.jpg&fm=jpg" alt="Combo com hambúrguer, batatas e bebida">
+        <div class="pizza-body">
+          <h2 class="pizza-title">Combo Família</h2>
+          <p class="pizza-ingredients">Cheeseburger completo, batatas generosas e bebida grande.</p>
+          <div class="pizza-meta">
+            <span class="pizza-price">R$ 44,90</span>
+            <div class="pizza-qty" aria-label="Quantidade Combo Família">
+              <button class="qty-btn" type="button" aria-label="Diminuir quantidade">-</button>
+              <span class="qty-value">1</span>
+              <button class="qty-btn" type="button" aria-label="Aumentar quantidade">+</button>
+            </div>
+          </div>
+          <button class="pizza-order" type="button">Pedir</button>
+        </div>
+      </article>
+    </section>
   </main>
 </body>
 </html>

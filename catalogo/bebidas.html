@@ -1,16 +1,128 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Bebidas</title>
+  <title>Bebidas | Pizzaria Demo</title>
   <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-  <main class="simple-page">
-    <h1>Bebidas</h1>
-    <p>Exemplo de conteúdo para a página de Bebidas.</p>
-    <a class="simple-link" href="../index.html">Voltar</a>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <span class="site-brand">Pizzaria Demo</span>
+      <a class="simple-link" href="../index.html">Voltar</a>
+    </div>
+  </header>
+
+  <main class="pizza-page">
+    <header class="pizza-page-header">
+      <h1>Bebidas Geladas</h1>
+      <p>Complete seu pedido com bebidas refrescantes e milkshakes cremosos.</p>
+    </header>
+
+    <section class="pizza-grid" aria-label="Catálogo de bebidas">
+      <article class="pizza-card">
+        <img class="pizza-image" src="https://images.pexels.com/photos/2775860/pexels-photo-2775860.jpeg?cs=srgb&dl=pexels-madison-inouye-1382399-2775860.jpg&fm=jpg" alt="Refrigerante gelado com gelo e limão">
+        <div class="pizza-body">
+          <h2 class="pizza-title">Refrigerante Lata 350ml</h2>
+          <p class="pizza-ingredients">Coca, Guaraná, Sprite ou Fanta bem gelados.</p>
+          <div class="pizza-meta">
+            <span class="pizza-price">R$ 6,90</span>
+            <div class="pizza-qty" aria-label="Quantidade Refrigerante Lata">
+              <button class="qty-btn" type="button" aria-label="Diminuir quantidade">-</button>
+              <span class="qty-value">1</span>
+              <button class="qty-btn" type="button" aria-label="Aumentar quantidade">+</button>
+            </div>
+          </div>
+          <button class="pizza-order" type="button">Pedir</button>
+        </div>
+      </article>
+
+      <article class="pizza-card">
+        <img class="pizza-image" src="https://images.pexels.com/photos/1171170/pexels-photo-1171170.jpeg?cs=srgb&dl=pexels-jessbaileydesign-1171170.jpg&fm=jpg" alt="Garrafa de refrigerante 1,5L com copo">
+        <div class="pizza-body">
+          <h2 class="pizza-title">Refrigerante 1,5L</h2>
+          <p class="pizza-ingredients">Ideal para dividir. Opções variadas no gelo.</p>
+          <div class="pizza-meta">
+            <span class="pizza-price">R$ 12,90</span>
+            <div class="pizza-qty" aria-label="Quantidade Refrigerante 1,5L">
+              <button class="qty-btn" type="button" aria-label="Diminuir quantidade">-</button>
+              <span class="qty-value">1</span>
+              <button class="qty-btn" type="button" aria-label="Aumentar quantidade">+</button>
+            </div>
+          </div>
+          <button class="pizza-order" type="button">Pedir</button>
+        </div>
+      </article>
+
+      <article class="pizza-card">
+        <img class="pizza-image" src="https://images.pexels.com/photos/1024735/pexels-photo-1024735.jpeg?cs=srgb&dl=pexels-lisa-1024735.jpg&fm=jpg" alt="Suco natural em copo com frutas">
+        <div class="pizza-body">
+          <h2 class="pizza-title">Suco Natural 400ml</h2>
+          <p class="pizza-ingredients">Laranja, maracujá, limão ou abacaxi com hortelã.</p>
+          <div class="pizza-meta">
+            <span class="pizza-price">R$ 9,90</span>
+            <div class="pizza-qty" aria-label="Quantidade Suco Natural">
+              <button class="qty-btn" type="button" aria-label="Diminuir quantidade">-</button>
+              <span class="qty-value">1</span>
+              <button class="qty-btn" type="button" aria-label="Aumentar quantidade">+</button>
+            </div>
+          </div>
+          <button class="pizza-order" type="button">Pedir</button>
+        </div>
+      </article>
+
+      <article class="pizza-card">
+        <img class="pizza-image" src="https://images.pexels.com/photos/616833/pexels-photo-616833.jpeg?cs=srgb&dl=pexels-lukas-616833.jpg&fm=jpg" alt="Água mineral com gás e gelo">
+        <div class="pizza-body">
+          <h2 class="pizza-title">Água Mineral</h2>
+          <p class="pizza-ingredients">Sem gás ou com gás, sempre geladinha.</p>
+          <div class="pizza-meta">
+            <span class="pizza-price">R$ 4,90</span>
+            <div class="pizza-qty" aria-label="Quantidade Água Mineral">
+              <button class="qty-btn" type="button" aria-label="Diminuir quantidade">-</button>
+              <span class="qty-value">1</span>
+              <button class="qty-btn" type="button" aria-label="Aumentar quantidade">+</button>
+            </div>
+          </div>
+          <button class="pizza-order" type="button">Pedir</button>
+        </div>
+      </article>
+
+      <article class="pizza-card">
+        <img class="pizza-image" src="https://images.pexels.com/photos/1352271/pexels-photo-1352271.jpeg?cs=srgb&dl=pexels-alleksana-1352271.jpg&fm=jpg" alt="Milkshake cremoso com chantilly">
+        <div class="pizza-body">
+          <h2 class="pizza-title">Milkshake 400ml</h2>
+          <p class="pizza-ingredients">Chocolate, baunilha ou morango com chantilly.</p>
+          <div class="pizza-meta">
+            <span class="pizza-price">R$ 14,90</span>
+            <div class="pizza-qty" aria-label="Quantidade Milkshake">
+              <button class="qty-btn" type="button" aria-label="Diminuir quantidade">-</button>
+              <span class="qty-value">1</span>
+              <button class="qty-btn" type="button" aria-label="Aumentar quantidade">+</button>
+            </div>
+          </div>
+          <button class="pizza-order" type="button">Pedir</button>
+        </div>
+      </article>
+
+      <article class="pizza-card">
+        <img class="pizza-image" src="https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?cs=srgb&dl=pexels-jessbaileydesign-1640777.jpg&fm=jpg" alt="Chá gelado com limão">
+        <div class="pizza-body">
+          <h2 class="pizza-title">Chá Gelado 400ml</h2>
+          <p class="pizza-ingredients">Chá de pêssego ou limão com gelo e hortelã.</p>
+          <div class="pizza-meta">
+            <span class="pizza-price">R$ 8,90</span>
+            <div class="pizza-qty" aria-label="Quantidade Chá Gelado">
+              <button class="qty-btn" type="button" aria-label="Diminuir quantidade">-</button>
+              <span class="qty-value">1</span>
+              <button class="qty-btn" type="button" aria-label="Aumentar quantidade">+</button>
+            </div>
+          </div>
+          <button class="pizza-order" type="button">Pedir</button>
+        </div>
+      </article>
+    </section>
   </main>
 </body>
 </html>
