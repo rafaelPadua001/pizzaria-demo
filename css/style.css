@@ -201,6 +201,104 @@ body {
   border-color: rgba(255, 215, 0, 0.4);
 }
 
+.catalog {
+  padding: 64px 20px 72px;
+  background: rgba(12, 8, 6, 0.95);
+}
+
+.catalog-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  display: grid;
+  gap: 28px;
+}
+
+.catalog-header {
+  text-align: center;
+  display: grid;
+  gap: 10px;
+}
+
+.catalog-title {
+  margin: 0;
+  font-size: clamp(1.6rem, 4vw, 2.3rem);
+}
+
+.catalog-subtitle {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+.catalog-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.catalog-card {
+  background: rgba(15, 10, 6, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 24px;
+  display: grid;
+  gap: 12px;
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  text-decoration: none;
+}
+
+.catalog-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 18px 30px rgba(0, 0, 0, 0.35);
+  border-color: rgba(255, 215, 0, 0.35);
+}
+
+.catalog-icon {
+  font-size: 2.4rem;
+}
+
+.catalog-card-title {
+  margin: 0;
+  color: #ffd700;
+  font-size: 1.1rem;
+}
+
+.catalog-card-text {
+  margin: 0;
+  color: #f5e9df;
+  line-height: 1.6;
+  font-size: 0.98rem;
+}
+
+.simple-page {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 48px 20px;
+}
+
+.simple-page h1 {
+  margin: 0 0 12px;
+}
+
+.simple-page p {
+  margin: 0 0 20px;
+  color: var(--muted);
+}
+
+.simple-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #0a1f12;
+  text-decoration: none;
+  font-weight: 700;
+}
+
 .app-showcase {
   padding: 64px 20px 72px;
   background: linear-gradient(160deg, rgba(15, 10, 6, 0.95), rgba(32, 12, 8, 0.9));
@@ -336,6 +434,10 @@ body {
 
   .benefit-icon {
     margin: 0 auto;
+  }
+
+  .catalog-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .app-showcase-inner {
