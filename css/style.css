@@ -123,6 +123,44 @@ body {
   outline-offset: 4px;
 }
 
+.snack-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 18px 16px 30px;
+  background: transparent;
+}
+
+.snack-divider .snack {
+  font-size: 1.8rem;
+  filter: none;
+  animation: snack-float 1.8s ease-in-out infinite;
+}
+
+.snack-divider .snack:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.snack-divider .snack:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.snack-divider--catalog {
+  padding: 10px 16px 20px;
+  background: transparent;
+}
+
+@keyframes snack-float {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-8px) scale(1.06);
+  }
+}
+
 .benefits {
   background: var(--panel);
   padding: 56px 20px 72px;
