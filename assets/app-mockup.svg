@@ -1,0 +1,31 @@
+<svg width="900" height="1600" viewBox="0 0 900 1600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="900" height="1600" rx="140" fill="#0B0705"/>
+  <rect x="40" y="40" width="820" height="1520" rx="120" fill="#17100B"/>
+  <rect x="70" y="120" width="760" height="1360" rx="90" fill="#120B07"/>
+  <rect x="360" y="70" width="180" height="12" rx="6" fill="#3A2A1F"/>
+  <rect x="430" y="94" width="40" height="8" rx="4" fill="#3A2A1F"/>
+  <rect x="120" y="180" width="660" height="120" rx="36" fill="#1E120C"/>
+  <text x="160" y="250" fill="#F9F2EA" font-family="Trebuchet MS, Arial, sans-serif" font-size="46" font-weight="700">Pizzaria Demo</text>
+  <text x="160" y="290" fill="#D6C2B0" font-family="Trebuchet MS, Arial, sans-serif" font-size="26">Seu pedido em um toque</text>
+  <rect x="120" y="340" width="660" height="200" rx="34" fill="#2A150D"/>
+  <circle cx="200" cy="440" r="58" fill="#FF4D2A"/>
+  <circle cx="200" cy="440" r="42" fill="#FFD36B"/>
+  <circle cx="200" cy="440" r="24" fill="#FF8A3D"/>
+  <text x="290" y="420" fill="#F9F2EA" font-family="Trebuchet MS, Arial, sans-serif" font-size="34" font-weight="700">Margherita</text>
+  <text x="290" y="468" fill="#D6C2B0" font-family="Trebuchet MS, Arial, sans-serif" font-size="24">Molho artesanal e manjericão</text>
+  <rect x="120" y="580" width="660" height="200" rx="34" fill="#2A150D"/>
+  <circle cx="200" cy="680" r="58" fill="#FF8A3D"/>
+  <circle cx="200" cy="680" r="42" fill="#FFD36B"/>
+  <circle cx="200" cy="680" r="24" fill="#FF4D2A"/>
+  <text x="290" y="660" fill="#F9F2EA" font-family="Trebuchet MS, Arial, sans-serif" font-size="34" font-weight="700">Pepperoni</text>
+  <text x="290" y="708" fill="#D6C2B0" font-family="Trebuchet MS, Arial, sans-serif" font-size="24">Queijo derretido e fatias crocantes</text>
+  <rect x="120" y="820" width="660" height="200" rx="34" fill="#2A150D"/>
+  <circle cx="200" cy="920" r="58" fill="#24D366"/>
+  <circle cx="200" cy="920" r="42" fill="#FFD36B"/>
+  <circle cx="200" cy="920" r="24" fill="#FF4D2A"/>
+  <text x="290" y="900" fill="#F9F2EA" font-family="Trebuchet MS, Arial, sans-serif" font-size="34" font-weight="700">Calabresa</text>
+  <text x="290" y="948" fill="#D6C2B0" font-family="Trebuchet MS, Arial, sans-serif" font-size="24">Sabor clássico com toque especial</text>
+  <rect x="120" y="1080" width="660" height="120" rx="60" fill="#24D366"/>
+  <text x="450" y="1160" fill="#0A1F12" font-family="Trebuchet MS, Arial, sans-serif" font-size="36" font-weight="700" text-anchor="middle">Pedir Agora</text>
+  <rect x="260" y="1260" width="380" height="28" rx="14" fill="#3A2A1F"/>
+</svg>
