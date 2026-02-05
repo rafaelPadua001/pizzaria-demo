@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Faça sua Festa Aqui</title>
+  <link rel="stylesheet" href="../css/faca_sua_festa.css">
+</head>
+<body>
+  <header>
+    <h1>Faça sua Festa Aqui</h1>
+    <p>Um espaço preparado para aniversários, confraternizações e eventos especiais com cardápio personalizado e atendimento dedicado.</p>
+  </header>
+
+  <main class="gallery" aria-label="Galeria Faça sua Festa">
+    <!-- Placeholders para futura substituição por imagens reais -->
+    <article class="card"><img src="https://images.pexels.com/photos/1110135/pexels-photo-1110135.jpeg?auto=compress&cs=tinysrgb&w=900" alt="Mesa de festa decorada"></article>
+    <article class="card"><img src="https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=900" alt="Decoração de aniversário com balões"></article>
+    <article class="card"><img src="https://images.pexels.com/photos/1128678/pexels-photo-1128678.jpeg?auto=compress&cs=tinysrgb&w=900" alt="Confraternização com amigos"></article>
+    <article class="card"><img src="https://images.pexels.com/photos/3184192/pexels-photo-3184192.jpeg?auto=compress&cs=tinysrgb&w=900" alt="Evento com iluminação aconchegante"></article>
+    <article class="card"><img src="https://images.pexels.com/photos/1666610/pexels-photo-1666610.jpeg?auto=compress&cs=tinysrgb&w=900" alt="Comemoração com família"></article>
+    <article class="card"><img src="https://images.pexels.com/photos/1229042/pexels-photo-1229042.jpeg?auto=compress&cs=tinysrgb&w=900" alt="Ambiente para festas na pizzaria"></article>
+  </main>
+
+  <div class="lightbox" id="lightbox" hidden>
+    <div class="lightbox-backdrop" data-action="close"></div>
+    <div class="lightbox-content" role="dialog" aria-modal="true" aria-label="Galeria ampliada">
+      <button class="lightbox-close" type="button" data-action="close" aria-label="Fechar">✕</button>
+      <button class="lightbox-arrow lightbox-arrow--prev" type="button" data-action="prev" aria-label="Imagem anterior">‹</button>
+      <img class="lightbox-image" id="lightboxImage" alt="">
+      <button class="lightbox-arrow lightbox-arrow--next" type="button" data-action="next" aria-label="Próxima imagem">›</button>
+    </div>
+  </div>
+
+  <script>
+    const galleryImages = Array.from(document.querySelectorAll(".gallery img"));
+    const lightbox = document.getElementById("lightbox");
+    const lightboxImage = document.getElementById("lightboxImage");
+    const prevBtn = lightbox.querySelector("[data-action='prev']");
+    const nextBtn = lightbox.querySelector("[data-action='next']");
+
+    let currentIndex = 0;
+
+    const updateLightbox = () => {
+      const current = galleryImages[currentIndex];
+      lightboxImage.src = current.src;
+      lightboxImage.alt = current.alt || "Imagem ampliada";
+      prevBtn.style.display = currentIndex === 0 ? "none" : "inline-flex";
+      nextBtn.style.display = currentIndex === galleryImages.length - 1 ? "none" : "inline-flex";
+    };
+
+    const openLightbox = (index) => {
+      currentIndex = index;
+      updateLightbox();
+      lightbox.hidden = false;
+      document.body.style.overflow = "hidden";
+    };
+
+    const closeLightbox = () => {
+      lightbox.hidden = true;
+      document.body.style.overflow = "";
+    };
+
+    galleryImages.forEach((img, index) => {
+      img.addEventListener("click", () => openLightbox(index));
+    });
+
+    lightbox.addEventListener("click", (event) => {
+      const action = event.target?.dataset?.action;
+      if (action === "close") {
+        closeLightbox();
+        return;
+      }
+      if (action === "prev" && currentIndex > 0) {
+        currentIndex -= 1;
+        updateLightbox();
+      }
+      if (action === "next" && currentIndex < galleryImages.length - 1) {
+        currentIndex += 1;
+        updateLightbox();
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (lightbox.hidden) return;
+      if (event.key === "Escape") closeLightbox();
+      if (event.key === "ArrowLeft" && currentIndex > 0) {
+        currentIndex -= 1;
+        updateLightbox();
+      }
+      if (event.key === "ArrowRight" && currentIndex < galleryImages.length - 1) {
+        currentIndex += 1;
+        updateLightbox();
+      }
+    });
+  </script>
+</body>
+</html>

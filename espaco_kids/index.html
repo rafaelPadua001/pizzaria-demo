@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Espaço Kids – Diversão para toda a família</title>
+  <link rel="stylesheet" href="../css/espaco_kids.css">
+</head>
+<body>
+  <header>
+    <h1>Espaço Kids – Diversão para toda a família</h1>
+    <p>Um ambiente colorido e seguro para as crianças se divertirem enquanto a família aproveita a refeição com tranquilidade.</p>
+  </header>
+
+  <main class="gallery" aria-label="Galeria Espaço Kids">
+    <!-- Placeholders para futura substituição por imagens reais -->
+    <article class="card"><img src="https://images.pexels.com/photos/1648374/pexels-photo-1648374.jpeg?auto=compress&cs=tinysrgb&w=900" alt="Crianças brincando em ambiente colorido"></article>
+    <article class="card"><img src="https://images.pexels.com/photos/1170181/pexels-photo-1170181.jpeg?auto=compress&cs=tinysrgb&w=900" alt="Espaço kids com brinquedos"></article>
+    <article class="card"><img src="https://images.pexels.com/photos/1319797/pexels-photo-1319797.jpeg?auto=compress&cs=tinysrgb&w=900" alt="Ambiente familiar com crianças"></article>
+    <article class="card"><img src="https://images.pexels.com/photos/1001914/pexels-photo-1001914.jpeg?auto=compress&cs=tinysrgb&w=900" alt="Brinquedoteca iluminada"></article>
+    <article class="card"><img src="https://images.pexels.com/photos/3662667/pexels-photo-3662667.jpeg?auto=compress&cs=tinysrgb&w=900" alt="Crianças se divertindo em área segura"></article>
+    <article class="card"><img src="https://images.pexels.com/photos/1648370/pexels-photo-1648370.jpeg?auto=compress&cs=tinysrgb&w=900" alt="Ambiente lúdico e acolhedor"></article>
+  </main>
+
+  <div class="lightbox" id="lightbox" hidden>
+    <div class="lightbox-backdrop" data-action="close"></div>
+    <div class="lightbox-content" role="dialog" aria-modal="true" aria-label="Galeria ampliada">
+      <button class="lightbox-close" type="button" data-action="close" aria-label="Fechar">✕</button>
+      <button class="lightbox-arrow lightbox-arrow--prev" type="button" data-action="prev" aria-label="Imagem anterior">‹</button>
+      <img class="lightbox-image" id="lightboxImage" alt="">
+      <button class="lightbox-arrow lightbox-arrow--next" type="button" data-action="next" aria-label="Próxima imagem">›</button>
+    </div>
+  </div>
+
+  <script>
+    const galleryImages = Array.from(document.querySelectorAll(".gallery img"));
+    const lightbox = document.getElementById("lightbox");
+    const lightboxImage = document.getElementById("lightboxImage");
+    const prevBtn = lightbox.querySelector("[data-action='prev']");
+    const nextBtn = lightbox.querySelector("[data-action='next']");
+
+    let currentIndex = 0;
+
+    const updateLightbox = () => {
+      const current = galleryImages[currentIndex];
+      lightboxImage.src = current.src;
+      lightboxImage.alt = current.alt || "Imagem ampliada";
+      prevBtn.style.display = currentIndex === 0 ? "none" : "inline-flex";
+      nextBtn.style.display = currentIndex === galleryImages.length - 1 ? "none" : "inline-flex";
+    };
+
+    const openLightbox = (index) => {
+      currentIndex = index;
+      updateLightbox();
+      lightbox.hidden = false;
+      document.body.style.overflow = "hidden";
+    };
+
+    const closeLightbox = () => {
+      lightbox.hidden = true;
+      document.body.style.overflow = "";
+    };
+
+    galleryImages.forEach((img, index) => {
+      img.addEventListener("click", () => openLightbox(index));
+    });
+
+    lightbox.addEventListener("click", (event) => {
+      const action = event.target?.dataset?.action;
+      if (action === "close") {
+        closeLightbox();
+        return;
+      }
+      if (action === "prev" && currentIndex > 0) {
+        currentIndex -= 1;
+        updateLightbox();
+      }
+      if (action === "next" && currentIndex < galleryImages.length - 1) {
+        currentIndex += 1;
+        updateLightbox();
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (lightbox.hidden) return;
+      if (event.key === "Escape") closeLightbox();
+      if (event.key === "ArrowLeft" && currentIndex > 0) {
+        currentIndex -= 1;
+        updateLightbox();
+      }
+      if (event.key === "ArrowRight" && currentIndex < galleryImages.length - 1) {
+        currentIndex += 1;
+        updateLightbox();
+      }
+    });
+  </script>
+</body>
+</html>

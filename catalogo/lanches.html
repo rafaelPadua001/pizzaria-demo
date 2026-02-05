@@ -11,6 +11,11 @@
     <div class="site-header-inner">
       <span class="site-brand">Pizzaria Demo</span>
       <a class="simple-link" href="../index.html">Voltar</a>
+      <button class="cart-button" id="cartButton" type="button" aria-controls="cartDrawer" aria-expanded="false">
+        <span class="cart-icon" aria-hidden="true">🛒</span>
+        <span class="cart-label">Carrinho</span>
+        <span class="cart-badge" id="cartBadge">0</span>
+      </button>
     </div>
   </header>
 
@@ -124,5 +129,24 @@
       </article>
     </section>
   </main>
+  <div class="cart-overlay" id="cartOverlay" hidden></div>
+  <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+    <header class="cart-header">
+      <h2>Carrinho</h2>
+      <button class="cart-close" id="cartClose" type="button">Fechar</button>
+    </header>
+    <div class="cart-content">
+      <div class="cart-empty" id="cartEmpty">Seu carrinho está vazio.</div>
+      <div class="cart-items" id="cartItems"></div>
+    </div>
+    <footer class="cart-footer">
+      <div class="cart-total-row">
+        <span>Total</span>
+        <strong id="cartTotal">R$ 0,00</strong>
+      </div>
+      <button class="cart-checkout" id="cartCheckout" type="button">Finalizar pedido</button>
+    </footer>
+  </aside>
+  <script src="../js/script.js"></script>
 </body>
 </html>

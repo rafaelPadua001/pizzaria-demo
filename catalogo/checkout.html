@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Checkout | Pizzaria Demo</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <span class="site-brand">Pizzaria Demo</span>
+      <a class="simple-link" href="../index.html">Voltar</a>
+    </div>
+  </header>
+
+  <main class="checkout-page">
+    <header class="checkout-header">
+      <h1>Checkout</h1>
+      <p>Revise seu pedido e preencha o endereço de entrega.</p>
+    </header>
+
+    <section class="checkout-section" aria-label="Resumo do pedido">
+      <h2>Resumo do pedido</h2>
+      <div class="checkout-empty" id="checkoutEmpty">Seu carrinho está vazio.</div>
+      <div class="checkout-items" id="checkoutItems"></div>
+      <div class="checkout-totals">
+        <div class="checkout-row">
+          <span>Total dos produtos</span>
+          <strong id="checkoutSubtotal">R$ 0,00</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="checkout-section" aria-label="Endereço de entrega">
+      <h2>Endereço de entrega</h2>
+      <div class="checkout-loading" id="checkoutCepLoading" aria-live="polite" hidden>Buscando endereço...</div>
+      <form class="checkout-form" id="checkoutForm">
+        <label class="form-field">
+          <span>CEP</span>
+          <input type="text" name="cep" id="checkoutCep" placeholder="00000-000" required>
+        </label>
+        <label class="form-field">
+          <span>Endereço completo</span>
+          <input type="text" name="endereco" id="checkoutAddress" placeholder="Rua, número, bairro, cidade" required>
+        </label>
+        <label class="form-field">
+          <span>Complemento (opcional)</span>
+          <input type="text" name="complemento" id="checkoutComplement" placeholder="Apartamento, bloco, referência">
+        </label>
+        <label class="form-field">
+          <span>Nome do cliente</span>
+          <input type="text" name="nome" id="checkoutName" placeholder="Seu nome" required>
+        </label>
+      </form>
+    </section>
+
+    <section class="checkout-section" aria-label="Entrega e total">
+      <h2>Entrega</h2>
+      <div class="checkout-loading" id="checkoutDeliveryLoading" aria-live="polite" hidden>Calculando entrega...</div>
+      <div class="checkout-error" id="checkoutError" role="alert" hidden></div>
+      <div class="checkout-totals">
+        <div class="checkout-row">
+          <span>Distância</span>
+          <strong id="checkoutDistance">0 km</strong>
+        </div>
+        <div class="checkout-row">
+          <span>Valor da entrega</span>
+          <strong id="checkoutDelivery">R$ 0,00</strong>
+        </div>
+        <div class="checkout-row checkout-row--total">
+          <span>Total geral</span>
+          <strong id="checkoutTotal">R$ 0,00</strong>
+        </div>
+      </div>
+      <button class="checkout-confirm" id="checkoutConfirm" type="button">Confirmar pedido</button>
+    </section>
+  </main>
+
+  <script src="../js/script.js"></script>
+</body>
+</html>
