@@ -393,6 +393,37 @@ clearCart = function () {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
+  const initBrandLogo = () => {
+    document.querySelectorAll(".site-brand").forEach((brand) => {
+      const logo = brand.querySelector(".site-brand-logo");
+      const text = brand.querySelector(".site-brand-text");
+      if (!logo || !text) return;
+
+      const showLogo = () => {
+        logo.style.display = "inline-block";
+        text.style.display = "none";
+      };
+
+      const showText = () => {
+        logo.style.display = "none";
+        text.style.display = "inline-block";
+      };
+
+      if (logo.complete) {
+        if (logo.naturalWidth > 0) {
+          showLogo();
+        } else {
+          showText();
+        }
+        return;
+      }
+
+      logo.addEventListener("load", showLogo, { once: true });
+      logo.addEventListener("error", showText, { once: true });
+    });
+  };
+
+  initBrandLogo();
   updateCartBadge();
   renderCartUI();
 
