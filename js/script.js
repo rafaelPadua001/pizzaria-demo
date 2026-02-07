@@ -670,7 +670,7 @@ const buildCheckoutMessage = ({ cart, checkoutData, distanceKm, deliveryFee, tot
     const subtotal = Number(item.preco || 0) * Number(item.quantidade || 0);
     lines.push(
       `${index + 1}. ${item.nome}`,
-      `Qtd: ${item.quantidade} | PreÃ§o: ${formatBRL(item.preco)} | Subtotal: ${formatBRL(subtotal)}`
+      `Qtd: ${item.quantidade} | Preço: ${formatBRL(item.preco)} | Subtotal: ${formatBRL(subtotal)}`
     );
   });
 
