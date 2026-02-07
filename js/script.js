@@ -250,7 +250,7 @@ function generateWhatsAppMessage() {
 
     lines.push(
       `${index + 1}. ${item.nome} (${item.categoria})`,
-      `Qtd: ${quantidade} | PreÃ§o: ${formatBRL(preco)} | Subtotal: ${formatBRL(subtotal)}`,
+      `Qtd: ${quantidade} | Preço: ${formatBRL(preco)} | Subtotal: ${formatBRL(subtotal)}`,
       ""
     );
   });
@@ -676,11 +676,11 @@ const buildCheckoutMessage = ({ cart, checkoutData, distanceKm, deliveryFee, tot
 
   lines.push("");
   lines.push(`Total dos produtos: ${formatBRL(calculateTotal())}`);
-  lines.push(`DistÃ¢ncia: ${distanceKm} km`);
+  lines.push(`Distância: ${distanceKm} km`);
   lines.push(`Entrega: ${formatBRL(deliveryFee)}`);
   lines.push(`Total geral: ${formatBRL(total)}`);
   lines.push("");
-  lines.push("EndereÃ§o de entrega:");
+  lines.push("Endereço de entrega:");
   lines.push(`${checkoutData.nome || "Cliente"}`);
   lines.push(`${checkoutData.endereco || ""}`);
   lines.push(`CEP: ${checkoutData.cep || ""}`);
