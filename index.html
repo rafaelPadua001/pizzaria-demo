@@ -156,7 +156,263 @@
       <button class="cart-checkout" id="cartCheckout" type="button">Finalizar pedido</button>
     </footer>
   </aside>
+  <!-- Chat widget (HTML + CSS + JS) -->
+  <div id="pizza-chat-widget" role="region" aria-label="Chat da Pizzaria">
+    <!-- Header -->
+    <div id="pcw-header">
+      <span>Pizzaria Chat</span>
+      <button id="pcw-close" type="button" aria-label="Fechar chat">×</button>
+    </div>
+
+    <!-- Lista de mensagens -->
+    <div id="pcw-messages" aria-live="polite"></div>
+
+    <!-- Input + botão -->
+    <div id="pcw-input-row">
+      <input
+        id="pcw-input"
+        type="text"
+        placeholder="Digite sua mensagem..."
+        autocomplete="off"
+      />
+      <button id="pcw-send" type="button">Enviar</button>
+    </div>
+  </div>
+
+  <style>
+    /* Estilo mínimo do widget */
+    #pizza-chat-widget {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      width: 320px;
+      max-height: 420px;
+      display: flex;
+      flex-direction: column;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+      background: #fff8f2;
+      font-family: Arial, sans-serif;
+      z-index: 9999;
+    }
+
+    #pcw-header {
+      background: #c0392b;
+      color: #fff;
+      padding: 12px 14px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    #pcw-messages {
+      padding: 12px;
+      overflow-y: auto;
+      flex: 1;
+      gap: 8px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .pcw-msg {
+      max-width: 85%;
+      padding: 8px 10px;
+      border-radius: 10px;
+      line-height: 1.3;
+      font-size: 14px;
+      word-break: break-word;
+    }
+
+    .pcw-msg.user {
+      align-self: flex-end;
+      background: #fde1d7;
+      color: #333;
+    }
+
+    .pcw-msg.assistant {
+      align-self: flex-start;
+      background: #fff;
+      color: #333;
+      border: 1px solid #f2c8b8;
+    }
+
+    .pcw-whatsapp {
+      align-self: flex-start;
+      margin-top: 4px;
+    }
+
+    .pcw-whatsapp a {
+      display: inline-block;
+      background: #25d366;
+      color: #fff;
+      text-decoration: none;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    #pcw-input-row {
+      display: flex;
+      gap: 8px;
+      padding: 10px;
+      background: #fff;
+      border-top: 1px solid #f2c8b8;
+    }
+
+    #pcw-input {
+      flex: 1;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #e0b6a7;
+      outline: none;
+    }
+
+    #pcw-send {
+      background: #c0392b;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+
+    #pcw-send:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  </style>
+
+  <script>
+    // Configure aqui o restaurante para reuso em outros clientes
+    const RESTAURANT_ID = "pizzaria_napoli";
+    // Endpoint do backend local (troque em producao)
+    const CHAT_ENDPOINT = `https://assistant-restaurant.onrender.com/restaurant/${RESTAURANT_ID}/chat`;
+
+    // State do assistente (mantem o contexto da conversa)
+    let state = {};
+
+    // Historico local da conversa (somente no frontend)
+    const history = [];
+
+    // Elementos do DOM
+    const messagesEl = document.getElementById("pcw-messages");
+    const inputEl = document.getElementById("pcw-input");
+    const sendBtn = document.getElementById("pcw-send");
+    const closeBtn = document.getElementById("pcw-close");
+
+    // Adiciona uma mensagem no painel
+    function addMessage(sender, text) {
+      const msg = document.createElement("div");
+      msg.className = `pcw-msg ${sender}`;
+      msg.textContent = text;
+      messagesEl.appendChild(msg);
+
+      history.push({ sender, text });
+      scrollToBottom();
+    }
+
+    // Adiciona botao do WhatsApp, se vier na resposta
+    function addWhatsAppButton(link) {
+      const wrap = document.createElement("div");
+      wrap.className = "pcw-whatsapp";
+
+      const a = document.createElement("a");
+      a.href = link;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = "Falar no WhatsApp";
+
+      wrap.appendChild(a);
+      messagesEl.appendChild(wrap);
+      scrollToBottom();
+    }
+
+    // Mantem o scroll no final da conversa
+    function scrollToBottom() {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    // Envia mensagem para o backend
+    async function sendMessage() {
+      const text = inputEl.value.trim();
+      if (!text) return;
+
+      addMessage("user", text);
+      inputEl.value = "";
+      inputEl.focus();
+
+      sendBtn.disabled = true;
+
+      try {
+        const response = await fetch(CHAT_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text, state }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Atualiza o state do assistente
+        if (data && data.state !== undefined) {
+          state = data.state;
+        }
+
+        // Renderiza a resposta do assistente
+        const assistantText =
+          data.response || data.message || data.reply || "Ok! Posso ajudar em mais algo?";
+        addMessage("assistant", assistantText);
+
+        // Se vier link do WhatsApp, mostra o botao
+        if (data && data.whatsapp_link) {
+          addWhatsAppButton(data.whatsapp_link);
+        }
+      } catch (err) {
+        console.error("Erro no chat:", err);
+        addMessage("assistant", "Erro ao conectar com o chat. Tente novamente em instantes.");
+      } finally {
+        sendBtn.disabled = false;
+      }
+    }
+
+    // Eventos de envio
+    sendBtn.addEventListener("click", sendMessage);
+    inputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    // Fecha o widget (pode recarregar a pagina para reabrir)
+    closeBtn.addEventListener("click", () => {
+      const widget = document.getElementById("pizza-chat-widget");
+      if (widget) widget.style.display = "none";
+    });
+
+    // Mensagem inicial opcional
+    addMessage("assistant", "Ola! Posso ajudar com seu pedido?");
+  </script>
   <script src="js/script.js"></script>
 </body>
 
 </html>
+    #pcw-close {
+      background: transparent;
+      color: #fff;
+      border: none;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0 4px;
+    }
+
+    #pcw-close:hover {
+      opacity: 0.85;
+    }
