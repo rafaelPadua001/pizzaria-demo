@@ -277,11 +277,21 @@
       border-radius: 8px;
       padding: 8px 12px;
       cursor: pointer;
+      box-shadow: 0 6px 12px rgba(192, 57, 43, 0.25);
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+    }
+
+    #pcw-send:hover {
+      background: #b23427;
+      box-shadow: 0 8px 16px rgba(192, 57, 43, 0.3);
+      transform: translateY(-1px);
     }
 
     #pcw-send:disabled {
       opacity: 0.6;
       cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
     }
   </style>
 
@@ -403,16 +413,4 @@
 </body>
 
 </html>
-    #pcw-close {
-      background: transparent;
-      color: #fff;
-      border: none;
-      font-size: 18px;
-      line-height: 1;
-      cursor: pointer;
-      padding: 0 4px;
-    }
-
-    #pcw-close:hover {
-      opacity: 0.85;
-    }
+    

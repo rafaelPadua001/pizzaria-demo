@@ -1159,6 +1159,30 @@ body {
   outline-offset: 4px;
 }
 
+#pcw-close {
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--text);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 999px;
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
+      width: 26px;
+      height: 26px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+    }
+
+    #pcw-close:hover {
+      background: rgba(0, 0, 0, 0.5);
+      border-color: rgba(255, 215, 0, 0.45);
+      transform: translateY(-1px);
+    }
+
+
 @media (min-width: 720px) {
   .benefits-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
