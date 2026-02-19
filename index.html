@@ -318,6 +318,43 @@
     const sendBtn = document.getElementById("pcw-send");
     const closeBtn = document.getElementById("pcw-close");
 
+    // Formata linhas de cardapio para exibir nome em destaque e preco/descricao em linhas separadas
+    function formatAssistantMessage(text) {
+      if (!text) return text;
+
+      const lines = text.split(/\r?\n/);
+      const itemRegex =
+        /^\s*•\s*([^-—]+)\s*[—-]\s*(.+?)\s*\(R\$\s*([\d.,]+)\)\s*[—-]\s*(.+)\s*$/;
+
+      let hasMenuLines = false;
+      let output = "";
+
+      for (let i = 0; i < lines.length; i += 1) {
+        const line = lines[i];
+        const match = line.match(itemRegex);
+
+        if (match) {
+          const name = match[2].trim();
+          const desc = match[4].trim();
+          let price = match[3].trim();
+
+          if (!price.includes(",") && price.includes(".")) {
+            price = price.replace(".", ",");
+          }
+
+          output += `• <strong>${name}</strong><br>${desc}<br>R$ ${price}<br><br>`;
+          hasMenuLines = true;
+        } else {
+          output += line;
+          if (i < lines.length - 1) {
+            output += "<br>";
+          }
+        }
+      }
+
+      return hasMenuLines ? output : text;
+    }
+
     // Sanitiza HTML do assistant permitindo apenas tags seguras
     function sanitizeAssistantHTML(html) {
       const container = document.createElement("div");
@@ -352,7 +389,8 @@
       const msg = document.createElement("div");
       msg.className = `pcw-msg ${sender}`;
       if (sender === "assistant") {
-        msg.innerHTML = sanitizeAssistantHTML(text);
+        const formatted = formatAssistantMessage(text);
+        msg.innerHTML = sanitizeAssistantHTML(formatted);
       } else {
         msg.textContent = text;
       }
