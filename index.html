@@ -37,7 +37,8 @@
     <div class="benefits-inner">
       <header class="benefits-header">
         <h2 class="benefits-title" id="benefits-title">Por que pedir com a gente?</h2>
-        <p class="benefits-subtitle" id="benefits-subtitle">Três motivos que fazem seu pedido chegar melhor e mais rápido.</p>
+        <p class="benefits-subtitle" id="benefits-subtitle">Três motivos que fazem seu pedido chegar melhor e mais
+          rápido.</p>
       </header>
       <div class="benefits-grid">
         <article class="benefit-card" data-benefit="0">
@@ -59,8 +60,8 @@
     </div>
   </section>
 
- 
-  
+
+
   <section class="catalog">
     <div class="catalog-inner">
       <header class="catalog-header">
@@ -87,7 +88,7 @@
     </div>
   </section>
 
-   <section class="features">
+  <section class="features">
     <div class="features-inner">
       <header class="features-header">
         <h2 class="features-title">Momentos especiais na nossa pizzaria</h2>
@@ -97,23 +98,27 @@
         <a class="feature-card" href="espaco_kids/index.html">
           <span class="feature-icon" aria-hidden="true">🧸</span>
           <h3 class="feature-title">Espaço Kids e Ambiente Acolhedor</h3>
-          <p class="feature-text">Ambiente familiar, confortável e com espaço kids para garantir tranquilidade aos pais e diversão para os pequenos durante a refeição. Ideal para momentos em grupo.</p>
+          <p class="feature-text">Ambiente familiar, confortável e com espaço kids para garantir tranquilidade aos pais
+            e diversão para os pequenos durante a refeição. Ideal para momentos em grupo.</p>
         </a>
         <a class="feature-card" href="faca_sua_festa/index.html">
           <span class="feature-icon" aria-hidden="true">🎉</span>
           <h3 class="feature-title">Faça sua Festa Aqui</h3>
-          <p class="feature-text">Estrutura completa para aniversários, confraternizações e eventos especiais. A pizzaria oferece espaço, cardápio personalizado e atendimento dedicado para tornar sua comemoração inesquecível.</p>
+          <p class="feature-text">Estrutura completa para aniversários, confraternizações e eventos especiais. A
+            pizzaria oferece espaço, cardápio personalizado e atendimento dedicado para tornar sua comemoração
+            inesquecível.</p>
         </a>
       </div>
     </div>
   </section>
 
-  
+
   <section class="app-showcase">
     <div class="app-showcase-inner">
       <div class="app-showcase-content">
         <h2 class="app-showcase-title" id="app-title">Seu pedido em um toque</h2>
-        <p class="app-showcase-text" id="app-text">Um app pensado para pedir rápido, repetir favoritos e acompanhar a entrega em tempo real.</p>
+        <p class="app-showcase-text" id="app-text">Um app pensado para pedir rápido, repetir favoritos e acompanhar a
+          entrega em tempo real.</p>
         <button class="app-download" type="button" disabled>Download App</button>
       </div>
       <img class="app-showcase-image" src="assets/app-mockup.webp" alt="Mockup do app de pizzaria em um smartphone">
@@ -162,20 +167,25 @@
     <!-- Header -->
     <div id="pcw-header">
       <span>Pizzaria Chat</span>
+      <div id="pcw-status-message"></div>
       <button id="pcw-close" type="button" aria-label="Fechar chat">×</button>
     </div>
 
     <!-- Lista de mensagens -->
     <div id="pcw-messages" aria-live="polite"></div>
 
+    <div class="chat-helpers">
+      <button onclick="sendQuick('menu')">📋 Cardápio</button>
+      <button onclick="sendQuick('carrinho')">🛒 Carrinho</button>
+      <button id="btn-finalizar" onclick="sendQuick('finalizar')">
+        ✅ Finalizar
+      </button>
+    </div>
     <!-- Input + botão -->
     <div id="pcw-input-row">
-      <input
-        id="pcw-input"
-        type="text"
-        placeholder="Digite sua mensagem..."
-        autocomplete="off"
-      />
+
+
+      <input id="pcw-input" type="text" placeholder="Digite sua mensagem..." autocomplete="off" />
       <button id="pcw-send" type="button">Enviar</button>
     </div>
   </div>
@@ -217,7 +227,7 @@
       display: flex;
       flex-direction: column;
       white-space: pre-wrap;
-        line-height: 1.5;
+      line-height: 1.5;
     }
 
     .pcw-msg {
@@ -299,194 +309,8 @@
     }
   </style>
 
-  <script>
-    console.info("pizzaria-demo/index.html build 2026-02-19 15:42");
-    // Configure aqui o restaurante para reuso em outros clientes
-    const RESTAURANT_ID = "pizzaria_napoli";
-    // Endpoint do backend local (troque em producao)
-    const CHAT_ENDPOINT = `https://assistant-restaurant.onrender.com/restaurant/${RESTAURANT_ID}/chat`;
-    
-    // State do assistente (mantem o contexto da conversa)
-    let state = {};
-
-    // Historico local da conversa (somente no frontend)
-    const history = [];
-
-    // Elementos do DOM
-    const messagesEl = document.getElementById("pcw-messages");
-    const inputEl = document.getElementById("pcw-input");
-    const sendBtn = document.getElementById("pcw-send");
-    const closeBtn = document.getElementById("pcw-close");
-
-    // Formata linhas de cardapio para exibir nome em destaque e preco/descricao em linhas separadas
-    function formatAssistantMessage(text) {
-      if (!text) return text;
-
-      const lines = text.split(/\r?\n/);
-      const itemRegex =
-        /^\s*•\s*([^-—]+)\s*[—-]\s*(.+?)\s*\(R\$\s*([\d.,]+)\)\s*[—-]\s*(.+)\s*$/;
-
-      let hasMenuLines = false;
-      let output = "";
-
-      for (let i = 0; i < lines.length; i += 1) {
-        const line = lines[i];
-        const match = line.match(itemRegex);
-
-        if (match) {
-          const name = match[2].trim();
-          const desc = match[4].trim();
-          let price = match[3].trim();
-
-          if (!price.includes(",") && price.includes(".")) {
-            price = price.replace(".", ",");
-          }
-
-          output += `• <strong>${name}</strong><br>${desc}<br>R$ ${price}<br><br>`;
-          hasMenuLines = true;
-        } else {
-          output += line;
-          if (i < lines.length - 1) {
-            output += "<br>";
-          }
-        }
-      }
-
-      return hasMenuLines ? output : text;
-    }
-
-    // Sanitiza HTML do assistant permitindo apenas tags seguras
-    function sanitizeAssistantHTML(html) {
-      const container = document.createElement("div");
-      container.innerHTML = html;
-
-      const allowed = new Set(["STRONG", "EM", "BR"]);
-
-      const cleanNode = (node) => {
-        for (const child of Array.from(node.childNodes)) {
-          if (child.nodeType === Node.ELEMENT_NODE) {
-            if (!allowed.has(child.tagName)) {
-              // Substitui tag nao permitida pelo texto interno
-              const text = document.createTextNode(child.textContent || "");
-              child.replaceWith(text);
-              continue;
-            }
-            // Remove atributos de tags permitidas
-            for (const attr of Array.from(child.attributes)) {
-              child.removeAttribute(attr.name);
-            }
-            cleanNode(child);
-          }
-        }
-      };
-
-      cleanNode(container);
-      return container.innerHTML;
-    }
-
-    // Adiciona uma mensagem no painel
-    function addMessage(sender, text) {
-      const msg = document.createElement("div");
-      msg.className = `pcw-msg ${sender}`;
-      if (sender === "assistant") {
-        const formatted = formatAssistantMessage(text);
-        msg.innerHTML = sanitizeAssistantHTML(formatted);
-      } else {
-        msg.textContent = text;
-      }
-      messagesEl.appendChild(msg);
-
-      history.push({ sender, text });
-      scrollToBottom();
-    }
-
-    // Adiciona botao do WhatsApp, se vier na resposta
-    function addWhatsAppButton(link) {
-      const wrap = document.createElement("div");
-      wrap.className = "pcw-whatsapp";
-
-      const a = document.createElement("a");
-      a.href = link;
-      a.target = "_blank";
-      a.rel = "noopener noreferrer";
-      a.textContent = "Falar no WhatsApp";
-
-      wrap.appendChild(a);
-      messagesEl.appendChild(wrap);
-      scrollToBottom();
-    }
-
-    // Mantem o scroll no final da conversa
-    function scrollToBottom() {
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    }
-
-    // Envia mensagem para o backend
-    async function sendMessage() {
-      const text = inputEl.value.trim();
-      if (!text) return;
-
-      addMessage("user", text);
-      inputEl.value = "";
-      inputEl.focus();
-
-      sendBtn.disabled = true;
-
-      try {
-        const response = await fetch(CHAT_ENDPOINT, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: text, state }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        // Atualiza o state do assistente
-        if (data && data.state !== undefined) {
-          state = data.state;
-        }
-
-        // Renderiza a resposta do assistente
-        const assistantText =
-          data.response || data.message || data.reply || "Ok! Posso ajudar em mais algo?";
-        addMessage("assistant", assistantText);
-
-        // Se vier link do WhatsApp, mostra o botao
-        if (data && data.whatsapp_link) {
-          addWhatsAppButton(data.whatsapp_link);
-        }
-      } catch (err) {
-        console.error("Erro no chat:", err);
-        addMessage("assistant", "Erro ao conectar com o chat. Tente novamente em instantes.");
-      } finally {
-        sendBtn.disabled = false;
-      }
-    }
-
-    // Eventos de envio
-    sendBtn.addEventListener("click", sendMessage);
-    inputEl.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        sendMessage();
-      }
-    });
-
-    // Fecha o widget (pode recarregar a pagina para reabrir)
-    closeBtn.addEventListener("click", () => {
-      const widget = document.getElementById("pizza-chat-widget");
-      if (widget) widget.style.display = "none";
-    });
-
-    // Mensagem inicial opcional
-    addMessage("assistant", "Ola! Posso ajudar com seu pedido?");
-  </script>
+  <script src="js/chat.js"></script>
   <script src="js/script.js"></script>
 </body>
 
 </html>
-    

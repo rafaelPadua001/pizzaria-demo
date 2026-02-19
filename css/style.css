@@ -423,10 +423,12 @@ body {
 }
 
 @keyframes snack-float {
+
   0%,
   100% {
     transform: translateY(0) scale(1);
   }
+
   50% {
     transform: translateY(-8px) scale(1.06);
   }
@@ -1070,10 +1072,12 @@ body {
 }
 
 @keyframes mockup-float {
+
   0%,
   100% {
     transform: translateY(0) rotateZ(-0.6deg);
   }
+
   50% {
     transform: translateY(-10px) rotateZ(0.6deg);
   }
@@ -1159,29 +1163,85 @@ body {
   outline-offset: 4px;
 }
 
+.pcw-status-message {
+  font-size: 8px;
+  font-weight: 200;
+  padding: 6px 10px;
+  border-radius: 20px;
+  display: inline-flex;
+  margin-bottom: 8px;
+}
+
+.pcw-open {
+  background-color: #e5f7ee;
+  color: #1e7e34;
+}
+
+
 #pcw-close {
-      background: rgba(0, 0, 0, 0.35);
-      color: var(--text);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 999px;
-      font-size: 16px;
-      font-weight: 700;
-      line-height: 1;
-      cursor: pointer;
-      width: 26px;
-      height: 26px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
-    }
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
 
-    #pcw-close:hover {
-      background: rgba(0, 0, 0, 0.5);
-      border-color: rgba(255, 215, 0, 0.45);
-      transform: translateY(-1px);
-    }
+#pcw-close:hover {
+  background: rgba(0, 0, 0, 0.5);
+  border-color: rgba(255, 215, 0, 0.45);
+  transform: translateY(-1px);
+}
 
+
+
+
+.chat-helpers {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+
+}
+
+.chat-helpers button {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: none;
+  background-color: #f2f4f7;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: 0.2s;
+}
+
+.chat-helpers button:hover {
+  background-color: #e4e7ec;
+}
+
+
+@media (min-width: 1024px) {
+  .pizza-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .pizza-image {
+    height: 180px;
+  }
+
+  .features-grid {
+    max-width: 820px;
+    margin: 0 auto;
+  }
+}
 
 @media (min-width: 720px) {
   .benefits-grid {
@@ -1232,20 +1292,5 @@ body {
   .hero-logo {
     width: 200px;
     max-width: 200px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .pizza-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .pizza-image {
-    height: 180px;
-  }
-
-  .features-grid {
-    max-width: 820px;
-    margin: 0 auto;
   }
 }
