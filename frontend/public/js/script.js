@@ -1,142 +1,125 @@
-﻿// Carrega conteúdo do admin.json ou localStorage e aplica na landing page.
+// Carrega dados das secoes da pagina via API
 (() => {
-  const STORAGE_KEY = "pizzariaAdminData";
+  const API_BASE = "http://127.0.0.1:8000";
 
-  const safeText = (id, value) => {
+  const setText = (id, value) => {
     const el = document.getElementById(id);
-    if (el && typeof value === "string") {
+    if (el && typeof value === "string" && value.trim() !== "") {
       el.textContent = value;
     }
   };
 
-  const safeLink = (id, text, href) => {
+  const setLink = (id, text, href) => {
     const el = document.getElementById(id);
-    if (!el) {
-      return;
-    }
-    if (typeof text === "string") {
+    if (!el) return;
+    if (typeof text === "string" && text.trim() !== "") {
       el.textContent = text;
     }
-    if (typeof href === "string") {
+    if (typeof href === "string" && href.trim() !== "") {
       el.setAttribute("href", href);
     }
   };
 
-  const applyBenefits = (items = []) => {
-    const cards = document.querySelectorAll("[data-benefit]");
-    items.forEach((item, index) => {
-      const card = cards[index];
-      if (!card) {
-        return;
-      }
-      const icon = card.querySelector(".benefit-icon");
-      const title = card.querySelector(".benefit-title");
-      const text = card.querySelector(".benefit-text");
-
-      if (icon && typeof item.icon === "string") {
-        icon.textContent = item.icon;
-      }
-      if (title && typeof item.title === "string") {
-        title.textContent = item.title;
-      }
-      if (text && typeof item.text === "string") {
-        text.textContent = item.text;
-      }
-    });
+  const setImage = (selector, url) => {
+    const el = document.querySelector(selector);
+    if (el && typeof url === "string" && url.trim() !== "") {
+      el.setAttribute("src", url);
+    }
   };
 
-  const applyData = (data) => {
-    if (!data || typeof data !== "object") {
+  const applySection = (section) => {
+    if (!section || !section.name) return;
+    const name = section.name.toLowerCase();
+
+    if (name === "hero") {
+      setText("hero-title", section.title);
+      setText("hero-subtitle", section.subtitle);
+      setText("hero-kicker", section.content);
+      setLink("hero-cta", null, section.link);
+      setImage(".hero-logo", section.image_url);
       return;
     }
 
-    if (data.hero) {
-      safeText("hero-kicker", data.hero.kicker);
-      safeText("hero-title", data.hero.title);
-      safeText("hero-subtitle", data.hero.subtitle);
-      safeLink("hero-cta", data.hero.ctaText, data.hero.ctaHref);
+    if (name === "benefits") {
+      setText("benefits-title", section.title);
+      setText("benefits-subtitle", section.subtitle);
+      return;
     }
 
-    if (data.benefits) {
-      safeText("benefits-title", data.benefits.title);
-      safeText("benefits-subtitle", data.benefits.subtitle);
-      applyBenefits(data.benefits.items);
+    if (name === "app") {
+      setText("app-title", section.title);
+      setText("app-text", section.subtitle || section.content);
+      setImage(".app-showcase-image", section.image_url);
+      return;
     }
 
-    if (data.app) {
-      safeText("app-title", data.app.title);
-      safeText("app-text", data.app.text);
+    if (name === "social") {
+      setText("social-highlight", section.title);
+      setText("social-trust", section.subtitle);
+      return;
     }
 
-    if (data.social) {
-      safeText("social-highlight", data.social.highlight);
-      safeText("social-trust", data.social.trust);
-      const stars = document.getElementById("social-stars");
-      if (stars && typeof data.social.stars === "string") {
-        stars.textContent = data.social.stars;
-      }
-    }
-
-    if (data.ctaFinal) {
-      safeText("cta-title", data.ctaFinal.title);
-      safeText("cta-text", data.ctaFinal.text);
-      safeLink("cta-button", data.ctaFinal.buttonText, data.ctaFinal.buttonHref);
+    if (name === "cta") {
+      setText("cta-title", section.title);
+      setText("cta-text", section.subtitle);
+      setLink("cta-button", section.content, section.link);
+      return;
     }
   };
 
-  const loadAdminData = async () => {
-    const cached = localStorage.getItem(STORAGE_KEY);
-    if (cached) {
-      try {
-        applyData(JSON.parse(cached));
-        return;
-      } catch (error) {
-        console.warn("Cache inválido no localStorage", error);
-      }
-    }
-
+  const loadSectionsFromApi = async () => {
     try {
-      const response = await fetch("admin.json", { cache: "no-store" });
-      if (!response.ok) {
-        throw new Error("Falha ao carregar admin.json");
-      }
+      const response = await fetch(`${API_BASE}/content/sections`, { cache: "no-store" });
+      if (!response.ok) return;
       const data = await response.json();
-      applyData(data);
+      if (Array.isArray(data)) {
+        data.forEach(applySection);
+      }
     } catch (error) {
-      console.warn("Não foi possível carregar admin.json", error);
+      console.warn("Nao foi possivel carregar secoes da API", error);
     }
   };
 
-  loadAdminData();
+  loadSectionsFromApi();
 })();
 
+async function loadCategories() {
+  try {
+    const response = await fetch('http://127.0.0.1:8000/categories');
+    if (!response.ok) throw new Error('Erro API');
+
+    const categories = await response.json();
+    if (!Array.isArray(categories) || !categories.length) return;
+
+    const grid = document.getElementById('catalogGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    categories.forEach(cat => {
+      const card = document.createElement('a');
+      card.className = 'catalog-card';
+      card.href = `/catalogo/${cat.slug}`;
+
+      card.innerHTML = `
+        <span class="catalog-icon">${cat.icon || '\uD83C\uDF7D\uFE0F'}</span>
+        <h3 class="catalog-card-title">${cat.title || 'Categoria'}</h3>
+        <p class="catalog-card-text">${cat.description || ''}</p>
+      `;
+
+      grid.appendChild(card);
+    });
+
+  } catch (error) {
+    console.warn('Usando fallback estatico');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadCategories);
 /* ===== CARRINHO (LOCALSTORAGE) ===== */
 // Chave fixa para persistir o carrinho
 const CART_KEY = "cart";
 
-// Exemplos de objetos de produto (estrutura esperada)
-const exampleProducts = [
-  {
-    id: "pizza-001",
-    nome: "Margherita",
-    categoria: "ClÃ¡ssicas",
-    descricao: "Molho de tomate, mussarela, manjericÃ£o e azeite.",
-    preco: 45.9,
-    quantidade: 1,
-    imagem: "./assets/pizzas/margherita.jpg"
-  },
-  {
-    id: "pizza-002",
-    nome: "Calabresa",
-    categoria: "Tradicionais",
-    descricao: "Calabresa artesanal, cebola roxa e azeitonas.",
-    preco: 49.9,
-    quantidade: 1,
-    imagem: "./assets/pizzas/calabresa.jpg"
-  }
-];
-
-// LÃª e valida o carrinho do localStorage
+// Lê e valida o carrinho do localStorage
 function getCart() {
   try {
     const raw = localStorage.getItem(CART_KEY);
@@ -188,7 +171,7 @@ function removeFromCart(id) {
   return cart;
 }
 
-// Atualiza quantidade; se 0 remove. Quantidade mÃ­nima = 1
+// Atualiza quantidade; se 0 remove. Quantidade mínima = 1
 function updateQuantity(id, quantity) {
   const cart = getCart();
   const item = cart.find(p => p.id === id);
@@ -250,7 +233,7 @@ function generateWhatsAppMessage() {
 
     lines.push(
       `${index + 1}. ${item.nome} (${item.categoria})`,
-      `Qtd: ${quantidade} | Preço: ${formatBRL(preco)} | Subtotal: ${formatBRL(subtotal)}`,
+      `Qtd: ${quantidade} | Pre�o: ${formatBRL(preco)} | Subtotal: ${formatBRL(subtotal)}`,
       ""
     );
   });
@@ -432,7 +415,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (headerTitle && headerTitle.textContent) {
       return headerTitle.textContent.trim();
     }
-    return "Cardápio";
+    return "Card�pio";
   })();
 
   const parsePrice = (priceText) => {
@@ -613,7 +596,7 @@ const calculateDistanceKm = (lat1, lon1, lat2, lon2) => {
 
 const geocodeAddress = async (address) => {
   if (!address) {
-    throw new Error("Endereço vazio");
+    throw new Error("Endere�o vazio");
   }
 
   const query = encodeURIComponent(address);
@@ -624,12 +607,12 @@ const geocodeAddress = async (address) => {
   });
 
   if (!response.ok) {
-    throw new Error("Falha ao consultar o endereço");
+    throw new Error("Falha ao consultar o endere�o");
   }
 
   const data = await response.json();
   if (!data || !data.length) {
-    throw new Error("Endereço não encontrado");
+    throw new Error("Endere�o n�o encontrado");
   }
 
   return {
@@ -670,17 +653,17 @@ const buildCheckoutMessage = ({ cart, checkoutData, distanceKm, deliveryFee, tot
     const subtotal = Number(item.preco || 0) * Number(item.quantidade || 0);
     lines.push(
       `${index + 1}. ${item.nome}`,
-      `Qtd: ${item.quantidade} | Preço: ${formatBRL(item.preco)} | Subtotal: ${formatBRL(subtotal)}`
+      `Qtd: ${item.quantidade} | Pre�o: ${formatBRL(item.preco)} | Subtotal: ${formatBRL(subtotal)}`
     );
   });
 
   lines.push("");
   lines.push(`Total dos produtos: ${formatBRL(calculateTotal())}`);
-  lines.push(`Distância: ${distanceKm} km`);
+  lines.push(`Dist�ncia: ${distanceKm} km`);
   lines.push(`Entrega: ${formatBRL(deliveryFee)}`);
   lines.push(`Total geral: ${formatBRL(total)}`);
   lines.push("");
-  lines.push("Endereço de entrega:");
+  lines.push("Endere�o de entrega:");
   lines.push(`${checkoutData.nome || "Cliente"}`);
   lines.push(`${checkoutData.endereco || ""}`);
   lines.push(`CEP: ${checkoutData.cep || ""}`);
@@ -843,7 +826,7 @@ const initCheckoutPage = () => {
       distanceEl.textContent = "0 km";
       deliveryEl.textContent = "R$ 0,00";
       totalEl.textContent = formatBRL(calculateTotal());
-      setCheckoutError("Não foi possível localizar o endereço. Verifique e tente novamente.");
+      setCheckoutError("N�o foi poss�vel localizar o endere�o. Verifique e tente novamente.");
     } finally {
       setDeliveryLoading(false);
     }
@@ -892,7 +875,7 @@ const initCheckoutPage = () => {
       }
     } catch (error) {
       if (error.name !== "AbortError") {
-        console.warn("NÃ£o foi possÃ­vel buscar o CEP", error);
+        console.warn("Não foi possível buscar o CEP", error);
       }
     } finally {
       if (addressSection) {
@@ -941,7 +924,7 @@ const initCheckoutPage = () => {
         deliveryFee = Number((distanceKm * VALOR_POR_KM).toFixed(2));
       } catch (error) {
         setDeliveryLoading(false);
-        setCheckoutError("Não foi possível calcular a entrega. Verifique o endereço.");
+        setCheckoutError("N�o foi poss�vel calcular a entrega. Verifique o endere�o.");
         return;
       }
     }
@@ -969,3 +952,10 @@ const getCheckoutUrl = () => {
 };
 
 document.addEventListener("DOMContentLoaded", initCheckoutPage);
+
+
+
+
+
+
+
