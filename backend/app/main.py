@@ -94,6 +94,85 @@ def startup_check():
         END $$;
         """))
 
+        # Order history: novas colunas e ajustes
+        connection.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_name VARCHAR(120)"))
+        connection.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_phone VARCHAR(20)"))
+        connection.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS total_amount DOUBLE PRECISION"))
+        connection.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS status VARCHAR(30) DEFAULT 'pending'"))
+
+        connection.execute(text("""
+        DO $$
+        BEGIN
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'orders' AND column_name = 'total'
+          ) THEN
+            UPDATE orders
+            SET total_amount = total
+            WHERE total_amount IS NULL;
+          END IF;
+        END $$;
+        """))
+
+        connection.execute(text("""
+        DO $$
+        BEGIN
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'order_items' AND column_name = 'order_id'
+          ) THEN
+            UPDATE orders AS o
+            SET total_amount = totals.total
+            FROM (
+              SELECT order_id, SUM(quantity * unit_price) AS total
+              FROM order_items
+              GROUP BY order_id
+            ) AS totals
+            WHERE o.id = totals.order_id
+              AND (o.total_amount IS NULL OR o.total_amount = 0);
+          END IF;
+        END $$;
+        """))
+
+        connection.execute(text("""
+        DO $$
+        BEGIN
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'orders' AND column_name = 'total'
+          ) THEN
+            ALTER TABLE orders ALTER COLUMN total DROP NOT NULL;
+          END IF;
+        END $$;
+        """))
+
+        connection.execute(text("ALTER TABLE order_items ADD COLUMN IF NOT EXISTS product_id INTEGER"))
+        connection.execute(text("ALTER TABLE order_items ADD COLUMN IF NOT EXISTS product_name VARCHAR(150)"))
+
+        connection.execute(text("""
+        DO $$
+        BEGIN
+          IF EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'order_items_product_id_fkey'
+          ) THEN
+            ALTER TABLE order_items DROP CONSTRAINT order_items_product_id_fkey;
+          END IF;
+        END $$;
+        """))
+
+        connection.execute(text("""
+        DO $$
+        BEGIN
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'order_items' AND column_name = 'product_id'
+          ) THEN
+            ALTER TABLE order_items ALTER COLUMN product_id DROP NOT NULL;
+          END IF;
+        END $$;
+        """))
+
         connection.execute(text("ALTER TABLE products ADD COLUMN IF NOT EXISTS category_id INTEGER"))
         connection.execute(text("ALTER TABLE products ADD COLUMN IF NOT EXISTS image_url VARCHAR(255)"))
         connection.execute(text("ALTER TABLE products ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE"))

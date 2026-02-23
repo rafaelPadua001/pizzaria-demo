@@ -213,9 +213,17 @@
 
       const info = document.createElement("div");
       const title = document.createElement("div");
+      const image = document.createElement("img");
+      image.className = "product-image";
+      image.src = product.image_url ? `${API_BASE}/uploads/products/${product.image_url}` : "placeholder.png";
+      image.alt = product.slug || `Produto ${product.name}`;
+      info.appendChild(image);
+      
       title.className = "row-title";
       title.textContent = product.name;
       info.appendChild(title);
+
+      
 
       if (product.description) {
         const desc = document.createElement("div");
@@ -263,8 +271,6 @@
       return;
     }
 
-    const productMap = new Map(products.map((p) => [p.id, p.name]));
-
     orders.forEach((order) => {
       const card = document.createElement("div");
       card.className = "order-card";
@@ -280,7 +286,7 @@
       meta.className = "row-meta";
       const date = new Date(order.created_at);
       meta.textContent = `${date.toLocaleString("pt-BR")} | Total R$ ${Number(
-        order.total
+        order.total_amount
       ).toFixed(2)}`;
 
       header.appendChild(title);
@@ -292,7 +298,7 @@
       order.items.forEach((item) => {
         const row = document.createElement("div");
         row.className = "order-item";
-        const name = productMap.get(item.product_id) || `Produto ${item.product_id}`;
+        const name = item.product_name || "Produto";
         row.textContent = `${item.quantity}x ${name} - R$ ${Number(item.unit_price).toFixed(2)}`;
         items.appendChild(row);
       });

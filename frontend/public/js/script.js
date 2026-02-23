@@ -566,6 +566,44 @@ window.addEventListener("storage", (event) => {
 /* ===== CHECKOUT ===== */
 const CHECKOUT_KEY = "checkout_data";
 
+const API_BASE = window.location.origin === "null"
+  ? "http://127.0.0.1:8000"
+  : window.location.origin;
+
+const saveOrderToApi = async ({ cart, checkoutData, totalAmount }) => {
+  const items = cart.map((item) => {
+    const parsedId = Number(item.id);
+    const productId = Number.isFinite(parsedId) && parsedId > 0 ? parsedId : null;
+
+    return {
+      product_id: productId,
+      product_name: String(item.nome || "Item"),
+      quantity: Number(item.quantidade || 1),
+      unit_price: Number(item.preco || 0),
+    };
+  });
+
+  const payload = {
+    customer_name: checkoutData.nome || null,
+    customer_phone: checkoutData.telefone || null,
+    total_amount: Number.isFinite(Number(totalAmount)) ? Number(totalAmount) : null,
+    items,
+  };
+
+  const response = await fetch(`${API_BASE}/orders/public`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new Error(data?.detail || "Falha ao salvar o pedido.");
+  }
+
+  return response.json().catch(() => null);
+};
+
 const getCheckoutData = () => {
   try {
     const raw = localStorage.getItem(CHECKOUT_KEY);
@@ -930,6 +968,14 @@ const initCheckoutPage = () => {
     }
     const total = calculateTotal() + deliveryFee;
 
+    try {
+      await saveOrderToApi({ cart, checkoutData, totalAmount: total });
+    } catch (error) {
+      setDeliveryLoading(false);
+      setCheckoutError(error.message || "Nao foi possivel registrar o pedido.");
+      return;
+    }
+
     const message = buildCheckoutMessage({
       cart,
       checkoutData,
@@ -948,7 +994,7 @@ const initCheckoutPage = () => {
 const getCheckoutUrl = () => {
   const currentPath = window.location.pathname.replace(/\\/g, "/");
   const isInCatalog = currentPath.includes("/catalogo/");
-  return isInCatalog ? "checkout.html" : "catalogo/checkout.html";
+  return isInCatalog ? "/catalogo/checkout" : "/catalogo/checkout";
 };
 
 document.addEventListener("DOMContentLoaded", initCheckoutPage);

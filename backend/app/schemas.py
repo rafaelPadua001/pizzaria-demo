@@ -120,17 +120,23 @@ class ProductResponse(ProductBase):
 
 
 class OrderItemCreate(BaseModel):
-    product_id: int
+    product_id: int | None = None
+    product_name: str
     quantity: int = 1
+    unit_price: float
 
 
 class OrderCreate(BaseModel):
+    customer_name: str | None = None
+    customer_phone: str | None = None
+    total_amount: float | None = None
     items: list[OrderItemCreate]
 
 
 class OrderItemResponse(BaseModel):
     id: int
-    product_id: int
+    product_id: int | None = None
+    product_name: str
     quantity: int
     unit_price: float
 
@@ -140,7 +146,10 @@ class OrderItemResponse(BaseModel):
 
 class OrderResponse(BaseModel):
     id: int
-    total: float
+    customer_name: str | None = None
+    customer_phone: str | None = None
+    total_amount: float
+    status: str
     created_at: datetime
     items: list[OrderItemResponse]
 
