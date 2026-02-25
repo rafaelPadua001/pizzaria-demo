@@ -7,6 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
 from .order import Order, OrderItem
+from .restaurant import Restaurant
 
 
 class Admin(Base):

@@ -31,12 +31,16 @@ def _create_order_from_payload(payload: OrderCreate, db: Session) -> Order:
             )
         )
 
+    delivery_fee = float(payload.delivery_fee or 0.0)
+    computed_total += delivery_fee
     total = float(payload.total_amount) if payload.total_amount is not None else computed_total
 
     order = Order(
+        restaurant_id=payload.restaurant_id,
         customer_name=payload.customer_name,
         customer_phone=payload.customer_phone,
         total_amount=total,
+        delivery_fee=delivery_fee,
         status="pending",
     )
     db.add(order)

@@ -3,7 +3,7 @@
 const RESTAURANT_ID = "pizzaria_napoli";
 // Endpoint do backend local (troque em producao)
 //const CHAT_ENDPOINT = `https://assistant-restaurant.onrender.com/restaurant/${RESTAURANT_ID}/chat`;
-const CHAT_ENDPOINT = ` http://127.0.0.1:8000/restaurant/${RESTAURANT_ID}/chat`;
+const CHAT_ENDPOINT = `http://127.0.0.1:8001/restaurant/${RESTAURANT_ID}/chat`;
 
 //Config Restaurant - pode ser carregada do backend para manter horarios dinamicos sem precisar atualizar o frontend
 const restaurantConfig = {
@@ -187,6 +187,27 @@ function addWhatsAppButton(link) {
     scrollToBottom();
 }
 
+function addAssistantButtons(buttons) {
+    if (!Array.isArray(buttons) || !buttons.length) return;
+
+    const wrap = document.createElement("div");
+    wrap.className = "pcw-buttons";
+
+    buttons.forEach((btn) => {
+        if (!btn || !btn.url) return;
+        const a = document.createElement("a");
+        a.href = btn.url;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.textContent = btn.title || "Pagar agora";
+        a.className = "pcw-btn"; // você pode estilizar no CSS
+        wrap.appendChild(a);
+    });
+
+    messagesEl.appendChild(wrap);
+    scrollToBottom();
+}
+
 // Mantem o scroll no final da conversa
 function scrollToBottom() {
     messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -234,13 +255,20 @@ async function sendMessage() {
 
         // Renderiza a resposta do assistente
         const assistantText =
-            data.response || data.message || data.reply || "Ok! Posso ajudar em mais algo?";
+            data.text || data.response || data.message || data.reply || "Ok! Posso ajudar em mais algo?";
         addMessage("assistant", assistantText);
 
         // Se vier link do WhatsApp, mostra o botao
+        if (data && Array.isArray(data.buttons) && data.buttons.length > 0) {
+            addAssistantButtons(data.buttons);
+        } else if (data && data.checkout_url) {
+            addAssistantButtons([{ title: "Pagar agora", url: data.checkout_url }]);
+        }
         if (data && data.whatsapp_link) {
             addWhatsAppButton(data.whatsapp_link);
         }
+
+        
     } catch (err) {
         console.error("Erro no chat:", err);
         addMessage("assistant", "Erro ao conectar com o chat. Tente novamente em instantes.");

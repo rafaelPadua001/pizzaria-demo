@@ -129,8 +129,29 @@ class OrderItemCreate(BaseModel):
 class OrderCreate(BaseModel):
     customer_name: str | None = None
     customer_phone: str | None = None
+    restaurant_id: int | None = None
     total_amount: float | None = None
+    delivery_fee: float | None = None
     items: list[OrderItemCreate]
+
+
+class CheckoutItemCreate(BaseModel):
+    product_id: int | None = None
+    product_name: str
+    quantity: int = 1
+    unit_price: float
+
+
+class CheckoutRequest(BaseModel):
+    restaurant_slug: str
+    customer_name: str | None = None
+    customer_phone: str | None = None
+    delivery_fee: float | None = None
+    items: list[CheckoutItemCreate]
+
+
+class OrderCreatedResponse(BaseModel):
+    order_id: int
 
 
 class OrderItemResponse(BaseModel):
@@ -148,10 +169,20 @@ class OrderResponse(BaseModel):
     id: int
     customer_name: str | None = None
     customer_phone: str | None = None
+    restaurant_id: int | None = None
     total_amount: float
+    delivery_fee: float | None = None
     status: str
+    payment_status: str | None = None
+    mercadopago_preference_id: str | None = None
+    mercadopago_payment_id: str | None = None
     created_at: datetime
     items: list[OrderItemResponse]
+
+
+class CheckoutResponse(BaseModel):
+    order_id: int
+    checkout_url: str
 
     class Config:
         orm_mode = True

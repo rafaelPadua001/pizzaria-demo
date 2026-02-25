@@ -59,21 +59,57 @@
       border: 1px solid #f2c8b8;
     }
 
-    .pcw-whatsapp {
-      align-self: flex-start;
-      margin-top: 4px;
-    }
+.pcw-whatsapp {
+  align-self: flex-start;
+  margin-top: 4px;
+}
 
-    .pcw-whatsapp a {
-      display: inline-block;
-      background: #25d366;
-      color: #fff;
-      text-decoration: none;
-      padding: 8px 10px;
-      border-radius: 8px;
-      font-size: 13px;
-    }
+.pcw-whatsapp a {
+  display: inline-block;
+  background: #25d366;
+  color: #fff;
+  text-decoration: none;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+}
 
+.pcw-buttons {
+    align-self: flex-start;
+    margin-top: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    max-width: 85%;
+}
+
+.pcw-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    background-color: #c0392b;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 13px;
+    box-shadow: 0 6px 12px rgba(192, 57, 43, 0.25);
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+    min-width: 120px;
+    text-align: center;
+}
+
+.pcw-btn:hover {
+    background-color: #b23427;
+    box-shadow: 0 8px 16px rgba(192, 57, 43, 0.3);
+    transform: translateY(-1px);
+}
+
+.pcw-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 10px rgba(192, 57, 43, 0.2);
+}
     #pcw-input-row {
       display: flex;
       gap: 8px;

@@ -1,6 +1,6 @@
 // Carrega dados das secoes da pagina via API
 (() => {
-  const API_BASE = "http://127.0.0.1:8000";
+  const API_BASE = "http://127.0.0.1:8001";
 
   const setText = (id, value) => {
     const el = document.getElementById(id);
@@ -569,6 +569,49 @@ const CHECKOUT_KEY = "checkout_data";
 const API_BASE = window.location.origin === "null"
   ? "http://127.0.0.1:8000"
   : window.location.origin;
+const RESTAURANT_ENV_URL = "/js/restaurant.env";
+let restaurantEnvPromise = null;
+
+const parseEnvText = (text) => {
+  const env = {};
+  text.split(/\r?\n/).forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) return;
+    const eqIndex = trimmed.indexOf("=");
+    if (eqIndex === -1) return;
+    const key = trimmed.slice(0, eqIndex).trim();
+    const value = trimmed.slice(eqIndex + 1).trim();
+    if (key) env[key] = value;
+  });
+  return env;
+};
+
+const loadRestaurantEnv = () => {
+  if (restaurantEnvPromise) return restaurantEnvPromise;
+  restaurantEnvPromise = fetch(RESTAURANT_ENV_URL, { cache: "no-store" })
+    .then((response) => (response.ok ? response.text() : ""))
+    .then((text) => {
+      if (!text) return;
+      const env = parseEnvText(text);
+      if (env.PIZZA_INTERNAL_API_KEY) {
+        window.PIZZA_INTERNAL_API_KEY = env.PIZZA_INTERNAL_API_KEY;
+        localStorage.setItem("pizzariaInternalKey", env.PIZZA_INTERNAL_API_KEY);
+      }
+      if (env.PIZZA_RESTAURANT_SLUG) {
+        window.PIZZA_RESTAURANT_SLUG = env.PIZZA_RESTAURANT_SLUG;
+        localStorage.setItem("restaurantSlug", env.PIZZA_RESTAURANT_SLUG);
+      }
+    })
+    .catch(() => undefined);
+  return restaurantEnvPromise;
+};
+
+const getRestaurantConfig = () => ({
+  internalApiKey:
+    window.PIZZA_INTERNAL_API_KEY || localStorage.getItem("pizzariaInternalKey") || "",
+  restaurantSlug:
+    window.PIZZA_RESTAURANT_SLUG || localStorage.getItem("restaurantSlug") || "",
+});
 
 const saveOrderToApi = async ({ cart, checkoutData, totalAmount }) => {
   const items = cart.map((item) => {
@@ -582,6 +625,34 @@ const saveOrderToApi = async ({ cart, checkoutData, totalAmount }) => {
       unit_price: Number(item.preco || 0),
     };
   });
+
+  await loadRestaurantEnv();
+  const { internalApiKey, restaurantSlug } = getRestaurantConfig();
+
+  if (internalApiKey && restaurantSlug) {
+    const response = await fetch(`${API_BASE}/api/orders/checkout`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-KEY": internalApiKey,
+      },
+      body: JSON.stringify({
+        restaurant_slug: restaurantSlug,
+        customer_name: checkoutData.nome || null,
+        customer_phone: checkoutData.telefone || null,
+        items,
+      }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => null);
+      throw new Error(data?.detail || "Falha ao criar checkout.");
+    }
+
+    return response.json().catch(() => null);
+  }
+
+  throw new Error("Checkout interno nao configurado. Verifique js/restaurant.env.");
 
   const payload = {
     customer_name: checkoutData.nome || null,
@@ -969,7 +1040,14 @@ const initCheckoutPage = () => {
     const total = calculateTotal() + deliveryFee;
 
     try {
-      await saveOrderToApi({ cart, checkoutData, totalAmount: total });
+      const checkoutResult = await saveOrderToApi({ cart, checkoutData, totalAmount: total });
+      if (checkoutResult?.checkout_url) {
+        clearCart();
+        localStorage.removeItem(CHECKOUT_KEY);
+        setDeliveryLoading(false);
+        window.location.href = checkoutResult.checkout_url;
+        return;
+      }
     } catch (error) {
       setDeliveryLoading(false);
       setCheckoutError(error.message || "Nao foi possivel registrar o pedido.");

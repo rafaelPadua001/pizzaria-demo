@@ -15,9 +15,16 @@ class Order(Base):
     __tablename__ = "orders"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    restaurant_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("restaurants.id"), nullable=True, index=True
+    )
     customer_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     customer_phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
     total_amount: Mapped[float] = mapped_column(Float, nullable=False)
+    delivery_fee: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    payment_status: Mapped[str] = mapped_column(String(30), default="pending", nullable=False)
+    mercadopago_preference_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    mercadopago_payment_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     status: Mapped[str] = mapped_column(
         Enum(*ORDER_STATUSES, name="order_status", native_enum=False, validate_strings=True),
         default="pending",
@@ -30,6 +37,7 @@ class Order(Base):
     items: Mapped[list["OrderItem"]] = relationship(
         "OrderItem", back_populates="order", cascade="all, delete-orphan"
     )
+    restaurant: Mapped["Restaurant"] = relationship("Restaurant")
 
 
 class OrderItem(Base):

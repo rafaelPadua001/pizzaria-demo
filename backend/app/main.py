@@ -1,14 +1,17 @@
+import os
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from sqlalchemy import text
+from sqlalchemy.orm import Session
 
-from .database import Base, engine
-from .models import Admin, Category, Product, Order, OrderItem, PageSection, Page  # noqa
-from .routes import admin, auth, categories, products, orders, admin_content, content, catalog
+from .database import Base, engine, get_db
+from .models import Admin, Category, Product, Order, OrderItem, PageSection, Page, Restaurant  # noqa
+from .routes import admin, auth, categories, products, orders, admin_content, content, catalog, checkout, webhook
+from .utils.time import get_current_time
 
 
 app = FastAPI()
@@ -57,6 +60,8 @@ app.include_router(orders.router)
 app.include_router(admin_content.router)
 app.include_router(content.router)
 app.include_router(catalog.router)
+app.include_router(checkout.router)
+app.include_router(webhook.router)
 
 @app.get("/admin")
 def serve_admin():
@@ -65,6 +70,17 @@ def serve_admin():
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
+@app.get("/restaurants")
+def list_restaurants(db: Session = Depends(get_db)):
+    return db.query(Restaurant).all()
+
+@app.get("/debug/time")
+def debug_time():
+    return {
+        "fake_time_env": os.getenv("FAKE_TIME"),
+        "current_time_used": str(get_current_time()),
+    }
 
 # ===============================
 # STARTUP MIGRATION
@@ -98,6 +114,13 @@ def startup_check():
         connection.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_name VARCHAR(120)"))
         connection.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_phone VARCHAR(20)"))
         connection.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS total_amount DOUBLE PRECISION"))
+        connection.execute(
+            text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_fee DOUBLE PRECISION DEFAULT 0.0")
+        )
+        connection.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS restaurant_id INTEGER"))
+        connection.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_status VARCHAR(30) DEFAULT 'pending'"))
+        connection.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS mercadopago_preference_id VARCHAR(255)"))
+        connection.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS mercadopago_payment_id VARCHAR(255)"))
         connection.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS status VARCHAR(30) DEFAULT 'pending'"))
 
         connection.execute(text("""
@@ -148,6 +171,22 @@ def startup_check():
 
         connection.execute(text("ALTER TABLE order_items ADD COLUMN IF NOT EXISTS product_id INTEGER"))
         connection.execute(text("ALTER TABLE order_items ADD COLUMN IF NOT EXISTS product_name VARCHAR(150)"))
+
+        connection.execute(text("""
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'orders_restaurant_id_fkey'
+          ) THEN
+            ALTER TABLE orders
+            ADD CONSTRAINT orders_restaurant_id_fkey
+            FOREIGN KEY (restaurant_id)
+            REFERENCES restaurants(id)
+            ON DELETE SET NULL;
+          END IF;
+        END $$;
+        """))
 
         connection.execute(text("""
         DO $$
