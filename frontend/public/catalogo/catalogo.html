@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Catálogo | Pizzaria Demo</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <span class="site-brand">
+        <img class="site-brand-logo" src="/assets/icons/logo.webp" alt="Pizzaria Demo">
+        <span class="site-brand-text">Pizzaria Demo</span>
+      </span>
+      <a class="simple-link" href="/">Voltar</a>
+      <button class="cart-button" id="cartButton" type="button" aria-controls="cartDrawer" aria-expanded="false">
+        <span class="cart-icon" aria-hidden="true">🛒</span>
+        <span class="cart-label">Carrinho</span>
+        <span class="cart-badge" id="cartBadge">0</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="pizza-page">
+    <header class="pizza-page-header">
+      <h1 id="categoryTitle">Carregando...</h1>
+      <p id="categoryDescription">Carregando catálogo...</p>
+    </header>
+
+    <section class="pizza-grid" id="productsGrid" aria-label="Catálogo da categoria"></section>
+  </main>
+
+  <div class="cart-overlay" id="cartOverlay" hidden></div>
+  <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+    <header class="cart-header">
+      <h2>Carrinho</h2>
+      <button class="cart-close" id="cartClose" type="button">Fechar</button>
+    </header>
+    <div class="cart-content">
+      <div class="cart-empty" id="cartEmpty">Seu carrinho está vazio.</div>
+      <div class="cart-items" id="cartItems"></div>
+    </div>
+    <footer class="cart-footer">
+      <div class="cart-total-row">
+        <span>Total</span>
+        <strong id="cartTotal">R$ 0,00</strong>
+      </div>
+      <button class="cart-checkout" id="cartCheckout" type="button">Finalizar pedido</button>
+    </footer>
+  </aside>
+
+  <script src="/js/script.js"></script>
+  <script src="/js/catalogo.js"></script>
+</body>
+</html>

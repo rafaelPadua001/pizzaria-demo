@@ -1,59 +1,44 @@
-﻿# Pizzaria Demo
+# Pizzaria Demo
 
-Landing page de pizzaria com área administrativa simples para editar textos e chamadas. O conteúdo pode ser salvo localmente (no navegador) e a página principal lê esses dados para exibição.
+Projeto com frontend estatico e backend FastAPI. O admin consome a API com JWT.
 
 ## Estrutura
 
-- `index.html`: landing page.
-- `admin.html`: painel administrativo.
-- `admin.json`: dados base da landing.
-- `css/`: estilos da landing e do admin.
-- `js/`: scripts para carregar e salvar dados.
-- `assets/`: imagens e mockups.
+- `frontend/public/index.html`: landing page
+- `frontend/admin/admin.html`: painel admin
+- `backend/app/main.py`: API FastAPI
 
-## Requisitos
-
-- Navegador moderno.
-- (Opcional) servidor local para evitar restrições de `fetch` em arquivos locais.
-
-## Instalação
-
-1. Clone o repositório ou copie a pasta `pizzaria-demo`.
-2. Abra a pasta no seu editor.
-
-## Uso
-
-### Rodando localmente
-
-Recomendado usar um servidor local simples:
+## Backend
 
 ```powershell
-# PowerShell
-cd C:\GitHub\pizzaria-demo
-python -m http.server 5500
+cd C:\GitHub\pizzaria-demo\backend
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
 ```
 
-Depois acesse:
+Crie um `.env` com as variaveis do `.env.example`.
 
-- Landing: `http://localhost:5500/index.html`
-- Admin: `http://localhost:5500/admin.html`
+## Seed admin
 
-### Editando conteúdo
+```powershell
+cd C:\GitHub\pizzaria-demo\backend
+python -m app.seed_admin
+```
 
-1. Abra `admin.html`.
-2. Altere os campos.
-3. Clique em **Salvar alterações**.
+## Seed categorias
 
-Os dados são gravados no `localStorage` do navegador. A `index.html` sempre tenta ler primeiro do `localStorage` e, se não houver dados salvos, carrega o `admin.json`.
+```powershell
+cd C:\GitHub\pizzaria-demo\backend
+python -m app.seed_categories
+```
 
-### Atualizando o conteúdo padrão
+## Admin
 
-Para atualizar o conteúdo padrão usado por todos:
+Abra `frontend/admin/admin.html` e faca login usando as credenciais do `.env`.
 
-1. Edite `admin.json`.
-2. (Opcional) limpe o `localStorage` do navegador para ver o conteúdo novo.
+## Observacoes
 
-## Observações
-
-- Não há backend neste momento. O fluxo é local.
-- Se abrir o `index.html` diretamente pelo arquivo (sem servidor), o `fetch` do `admin.json` pode ser bloqueado pelo navegador.
+- Produtos e pedidos sao persistidos no banco via API.
+- O admin nao usa JSON local.

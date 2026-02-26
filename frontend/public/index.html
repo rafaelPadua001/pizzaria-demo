@@ -1,0 +1,200 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pizzaria Demo</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/chat.css">
+</head>
+
+<body>
+  <!-- build: 2026-02-19 15:42 (pizzaria-demo/index.html) -->
+  <header class="site-header">
+    <div class="site-header-inner">
+      <span class="site-brand">
+        <img class="site-brand-logo" src="assets/icons/logo.webp" alt="Pizzaria Demo">
+        <span class="site-brand-text">Pizzaria Demo</span>
+      </span>
+      <button class="cart-button" id="cartButton" type="button" aria-controls="cartDrawer" aria-expanded="false">
+        <span class="cart-icon" aria-hidden="true">🛒</span>
+        <span class="cart-label">Carrinho</span>
+        <span class="cart-badge" id="cartBadge">0</span>
+      </button>
+    </div>
+  </header>
+  <main class="hero hero--image">
+    <div class="hero-content">
+      <!-- Logo da pizzaria no hero -->
+      <img class="hero-logo" src="assets/icons/logo.webp" alt="Logo da Pizzaria Demo">
+      <p class="hero-kicker" id="hero-kicker">Pizzas artesanais em minutos</p>
+      <h1 class="hero-title" id="hero-title">A pizza perfeita, quentinha e na sua porta hoje.</h1>
+      <p class="hero-subtitle" id="hero-subtitle">Escolha seu sabor e finalize o pedido em menos de 1 minuto.</p>
+      <a class="hero-cta" id="hero-cta" href="https://wa.me/5511999999999">Pedir no WhatsApp</a>
+    </div>
+  </main>
+  <section class="benefits">
+    <div class="benefits-inner">
+      <header class="benefits-header">
+        <h2 class="benefits-title" id="benefits-title">Por que pedir com a gente?</h2>
+        <p class="benefits-subtitle" id="benefits-subtitle">Três motivos que fazem seu pedido chegar melhor e mais
+          rápido.</p>
+      </header>
+      <div class="benefits-grid">
+        <article class="benefit-card" data-benefit="0">
+          <span class="benefit-icon" aria-hidden="true">🔥</span>
+          <h3 class="benefit-title">Sai do forno, vai pra você</h3>
+          <p class="benefit-text">Assamos na hora e entregamos em embalagem térmica.</p>
+        </article>
+        <article class="benefit-card" data-benefit="1">
+          <span class="benefit-icon" aria-hidden="true">⏱️</span>
+          <h3 class="benefit-title">Entrega rápida na sua região</h3>
+          <p class="benefit-text">Rotas otimizadas para chegar em até 30 minutos.</p>
+        </article>
+        <article class="benefit-card" data-benefit="2">
+          <span class="benefit-icon" aria-hidden="true">🥗</span>
+          <h3 class="benefit-title">Ingredientes selecionados</h3>
+          <p class="benefit-text">Massa leve, molho artesanal e sabores equilibrados.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+
+
+  <section class="catalog">
+    <div class="catalog-inner">
+      <header class="catalog-header">
+        <h2 class="catalog-title">Nosso cardápio</h2>
+        <p class="catalog-subtitle">Escolha sua combinação favorita e peça agora.</p>
+      </header>
+      <div class="catalog-grid" id="catalogGrid">
+        <a class="catalog-card" href="/catalogo/pizzas">
+          <span class="catalog-icon" aria-hidden="true">🍕</span>
+          <h3 class="catalog-card-title">Pizzas</h3>
+          <p class="catalog-card-text">Clássicas e especiais com massa artesanal.</p>
+        </a>
+        <a class="catalog-card" href="/catalogo/lanches">
+          <span class="catalog-icon" aria-hidden="true">🍔</span>
+          <h3 class="catalog-card-title">Lanches</h3>
+          <p class="catalog-card-text">Combos completos para matar a fome.</p>
+        </a>
+        <a class="catalog-card" href="/catalogo/bebidas">
+          <span class="catalog-icon" aria-hidden="true">🥤</span>
+          <h3 class="catalog-card-title">Bebidas</h3>
+          <p class="catalog-card-text">Refrigerantes, sucos e águas geladas.</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="features-inner">
+      <header class="features-header">
+        <h2 class="features-title">Momentos especiais na nossa pizzaria</h2>
+        <p class="features-subtitle">Ambientes pensados para família, celebrações e encontros inesquecíveis.</p>
+      </header>
+      <div class="features-grid">
+        <a class="feature-card" href="espaco_kids/index.html">
+          <span class="feature-icon" aria-hidden="true">🧸</span>
+          <h3 class="feature-title">Espaço Kids e Ambiente Acolhedor</h3>
+          <p class="feature-text">Ambiente familiar, confortável e com espaço kids para garantir tranquilidade aos pais
+            e diversão para os pequenos durante a refeição. Ideal para momentos em grupo.</p>
+        </a>
+        <a class="feature-card" href="faca_sua_festa/index.html">
+          <span class="feature-icon" aria-hidden="true">🎉</span>
+          <h3 class="feature-title">Faça sua Festa Aqui</h3>
+          <p class="feature-text">Estrutura completa para aniversários, confraternizações e eventos especiais. A
+            pizzaria oferece espaço, cardápio personalizado e atendimento dedicado para tornar sua comemoração
+            inesquecível.</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="app-showcase">
+    <div class="app-showcase-inner">
+      <div class="app-showcase-content">
+        <h2 class="app-showcase-title" id="app-title">Seu pedido em um toque</h2>
+        <p class="app-showcase-text" id="app-text">Um app pensado para pedir rápido, repetir favoritos e acompanhar a
+          entrega em tempo real.</p>
+        <button class="app-download" type="button" disabled>Download App</button>
+      </div>
+      <img class="app-showcase-image" src="assets/app-mockup.webp" alt="Mockup do app de pizzaria em um smartphone">
+    </div>
+  </section>
+  <section class="social-proof">
+    <div class="social-proof-inner">
+      <p class="social-proof-highlight" id="social-highlight">Mais de 2.000 clientes satisfeitos na última semana.</p>
+      <div class="social-proof-stars" id="social-stars" aria-label="Avaliação cinco estrelas">⭐⭐⭐⭐⭐</div>
+      <p class="social-proof-trust" id="social-trust">Confiança, sabor e entrega rápida em cada pedido.</p>
+    </div>
+  </section>
+  <section class="cta-final">
+    <div class="cta-final-inner">
+      <h2 class="cta-final-title" id="cta-title">Ficou com fome? Peça agora e receba quentinha.</h2>
+      <div class="snack-divider snack-divider--cta" aria-hidden="true">
+        <span class="snack">🍟</span>
+        <span class="snack">🍕</span>
+        <span class="snack">🥤</span>
+      </div>
+      <p class="cta-final-text" id="cta-text">Clique no botão e finalize seu pedido em instantes.</p>
+      <a class="cta-final-button" id="cta-button" href="https://wa.me/5511999999999">Chamar no WhatsApp</a>
+    </div>
+  </section>
+
+  <div class="cart-overlay" id="cartOverlay" hidden></div>
+  <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+    <header class="cart-header">
+      <h2>Carrinho</h2>
+      <button class="cart-close" id="cartClose" type="button">Fechar</button>
+    </header>
+    <div class="cart-content">
+      <div class="cart-empty" id="cartEmpty">Seu carrinho está vazio.</div>
+      <div class="cart-items" id="cartItems"></div>
+    </div>
+    <footer class="cart-footer">
+      <div class="cart-total-row">
+        <span>Total</span>
+        <strong id="cartTotal">R$ 0,00</strong>
+      </div>
+      <button class="cart-checkout" id="cartCheckout" type="button">Finalizar pedido</button>
+    </footer>
+  </aside>
+  <!-- Chat widget (HTML + CSS + JS) -->
+  <div id="pizza-chat-widget" role="region" aria-label="Chat da Pizzaria">
+    <!-- Header -->
+    <div id="pcw-header">
+      <span>Pizzaria Chat</span>
+      <div id="pcw-status-message"></div>
+      <button id="pcw-close" type="button" aria-label="Fechar chat">×</button>
+    </div>
+
+    <!-- Lista de mensagens -->
+    <div id="pcw-messages" aria-live="polite"></div>
+
+    <div class="chat-helpers">
+      <button onclick="sendQuick('menu')">📋 Cardápio</button>
+      <button onclick="sendQuick('carrinho')">🛒 Carrinho</button>
+      <button id="btn-finalizar" onclick="sendQuick('finalizar')">
+        ✅ Finalizar
+      </button>
+    </div>
+    <!-- Input + botão -->
+    <div id="pcw-input-row">
+
+
+      <input id="pcw-input" type="text" placeholder="Digite sua mensagem..." autocomplete="off" />
+      <button id="pcw-send" type="button">Enviar</button>
+    </div>
+  </div>
+
+
+
+  <script src="js/chat.js"></script>
+  <script src="js/script.js"></script>
+</body>
+
+</html>

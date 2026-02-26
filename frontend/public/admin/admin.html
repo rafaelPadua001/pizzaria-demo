@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pizzaria Demo - Admin</title>
+  <link rel="stylesheet" href="/admin/css/admin.css">
+</head>
+<body>
+  <header class="admin-header">
+    <div class="admin-header-inner">
+      <div>
+        <p class="admin-kicker">Area Administrativa</p>
+        <h1 class="admin-title">Painel da Pizzaria</h1>
+      </div>
+      <div class="admin-header-actions">
+        <a class="btn-ghost" href="/">Pagina inicial</a>
+        <button class="btn-ghost" type="button" data-action="logout">Sair</button>
+      </div>
+      <div class="admin-status" id="authStatus">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span>Autenticacao requerida</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    <section class="login-card" id="loginView">
+      <h2>Entrar</h2>
+      <p class="muted">Use suas credenciais de administrador.</p>
+      <form id="loginForm" class="form-grid">
+        <label class="form-field">
+          Usuario
+          <input type="text" name="username" autocomplete="username" required>
+        </label>
+        <label class="form-field">
+          Senha
+          <input type="password" name="password" autocomplete="current-password" required>
+        </label>
+        <div class="form-actions">
+          <button class="btn-primary" type="submit">Entrar</button>
+        </div>
+        <div class="alert" id="loginError" hidden></div>
+      </form>
+    </section>
+
+    <section class="admin-app" id="appView" hidden>
+      <aside class="admin-nav">
+        <h2 class="admin-nav-title">Menu</h2>
+        <nav id="adminNav">
+          <button class="nav-link" type="button" data-view="page-sections">
+            <span class="nav-icon" aria-hidden="true">S</span>Secoes
+          </button>
+          <button class="nav-link" type="button" data-view="categories">
+            <span class="nav-icon" aria-hidden="true">C</span>Categorias
+          </button>
+          <button class="nav-link" type="button" data-view="products">
+            <span class="nav-icon" aria-hidden="true">P</span>Produtos
+          </button>
+          <button class="nav-link" type="button" data-view="pages">
+            <span class="nav-icon" aria-hidden="true">G</span>Paginas
+          </button>
+          <button class="nav-link" type="button" data-view="orders">
+            <span class="nav-icon" aria-hidden="true">H</span>Historico de pedidos
+          </button>
+          <button class="nav-link nav-logout" type="button" data-action="logout">
+            <span class="nav-icon" aria-hidden="true">X</span>Logout
+          </button>
+        </nav>
+      </aside>
+
+      <section class="admin-content">
+        <div class="panel" data-view="page-sections" hidden>
+          <div class="panel-header">
+            <div>
+              <h2>Secoes da pagina</h2>
+              <p class="muted">Edite titulos, textos e imagens da landing.</p>
+            </div>
+            <div class="panel-actions">
+              <button class="btn-ghost" type="button" id="createPageSection">Nova secao</button>
+              <button class="btn-ghost" type="button" id="refreshPageSections">Atualizar</button>
+            </div>
+          </div>
+          <div class="list" id="pageSectionsList"></div>
+          <div class="alert" id="pageSectionError" hidden></div>
+        </div>
+
+        <div class="panel" data-view="categories" hidden>
+          <div class="panel-header">
+            <div>
+              <h2>Categorias</h2>
+              <p class="muted">Gerencie as categorias do cardapio.</p>
+            </div>
+            <button class="btn-ghost" type="button" id="refreshCategories">Atualizar</button>
+          </div>
+
+          <form id="categoryForm" class="form-grid">
+            <input type="hidden" name="categoryId">
+            <label class="form-field">
+              Nome interno (ex: pizzas)
+              <input type="text" name="categoryName" required>
+            </label>
+            <label class="form-field">
+              Titulo
+              <input type="text" name="categoryTitle">
+            </label>
+            <label class="form-field">
+              Descricao
+              <textarea name="categoryDescription" rows="2"></textarea>
+            </label>
+            <label class="form-field">
+              Icone (emoji)
+              <input type="text" name="categoryIcon" maxlength="10">
+            </label>
+            <label class="form-field">
+              URL da imagem
+              <input type="text" name="categoryImageUrl">
+            </label>
+            <label class="form-field">
+              Slug (ex: pizzas)
+              <input type="text" name="categorySlug" required>
+            </label>
+            <label class="form-field">
+              Ordem
+              <input type="number" name="categoryOrder" min="0" value="0">
+            </label>
+            <label class="form-field">
+              Ativa
+              <select name="categoryActive">
+                <option value="true">Sim</option>
+                <option value="false">Nao</option>
+              </select>
+            </label>
+            <div class="form-actions">
+              <button class="btn-primary" type="submit" id="categorySubmit">Salvar categoria</button>
+              <button class="btn-ghost" type="button" id="categoryCancel">Cancelar</button>
+            </div>
+            <div class="alert" id="categoryError" hidden></div>
+          </form>
+
+          <div class="list" id="categoriesList"></div>
+        </div>
+
+        <div class="panel" data-view="products" hidden>
+          <div class="panel-header">
+            <div>
+              <h2>Produtos</h2>
+              <p class="muted">Cadastre itens e vincule a uma secao.</p>
+            </div>
+            <button class="btn-ghost" type="button" id="refreshProducts">Atualizar</button>
+          </div>
+
+          <form id="productForm" class="form-grid" enctype="multipart/form-data">
+            <input type="hidden" name="productId">
+            <label class="form-field">
+              Nome
+              <input type="text" name="productName" required>
+            </label>
+            <label class="form-field">
+              Descricao
+              <textarea name="productDescription" rows="2"></textarea>
+            </label>
+            <label class="form-field">
+              Preco
+              <input type="number" name="productPrice" min="0" step="0.01" required>
+            </label>
+            <label class="form-field">
+              Categoria
+              <select name="productCategory" required></select>
+            </label>
+            <label class="form-field">
+              Imagem do produto
+              <input type="file" name="productImage" accept="image/*">
+            </label>
+            <div class="form-actions">
+              <button class="btn-primary" type="submit" id="productSubmit">Salvar produto</button>
+              <button class="btn-ghost" type="button" id="productCancel">Cancelar</button>
+            </div>
+            <div class="alert" id="productError" hidden></div>
+          </form>
+
+          <div class="list" id="productsList"></div>
+        </div>
+
+        <div class="panel" data-view="pages" hidden>
+          <div class="panel-header">
+            <div>
+              <h2>Paginas</h2>
+              <p class="muted">Crie paginas estaticas com slug e conteudo.</p>
+            </div>
+            <button class="btn-ghost" type="button" id="refreshPages">Atualizar</button>
+          </div>
+
+          <form id="pageForm" class="form-grid">
+            <input type="hidden" name="pageId">
+            <label class="form-field">
+              Slug
+              <input type="text" name="pageSlug" placeholder="ex: quem-somos" required>
+            </label>
+            <label class="form-field">
+              Titulo
+              <input type="text" name="pageTitle">
+            </label>
+            <label class="form-field">
+              Conteudo
+              <textarea name="pageContent" rows="4"></textarea>
+            </label>
+            <div class="form-actions">
+              <button class="btn-primary" type="submit" id="pageSubmit">Salvar pagina</button>
+              <button class="btn-ghost" type="button" id="pageCancel">Cancelar</button>
+            </div>
+            <div class="alert" id="pagesError" hidden></div>
+          </form>
+
+          <div class="list" id="pagesList"></div>
+        </div>
+
+        <div class="panel" data-view="orders" hidden>
+          <div class="panel-header">
+            <div>
+              <h2>Historico de pedidos</h2>
+              <p class="muted">Acompanhe os pedidos recebidos.</p>
+            </div>
+            <button class="btn-ghost" type="button" id="refreshOrders">Atualizar</button>
+          </div>
+          <div class="list" id="ordersList"></div>
+          <div class="alert" id="ordersError" hidden></div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div class="modal" id="pageSectionModal" hidden>
+    <div class="modal-backdrop" data-modal-close></div>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="pageSectionModalTitle">Nova secao</h3>
+        <button class="btn-ghost" type="button" data-modal-close>Fechar</button>
+      </div>
+      <form id="pageSectionForm" class="form-grid">
+        <input type="hidden" name="pageSectionId">
+        <label class="form-field">
+          Nome interno (ex: hero, benefits)
+          <input type="text" name="pageSectionName" required>
+        </label>
+        <label class="form-field">
+          Titulo
+          <input type="text" name="pageSectionTitle">
+        </label>
+        <label class="form-field">
+          Subtitulo
+          <textarea name="pageSectionSubtitle" rows="2"></textarea>
+        </label>
+        <label class="form-field">
+          Conteudo
+          <textarea name="pageSectionContent" rows="3"></textarea>
+        </label>
+        <label class="form-field">
+          Link
+          <input type="text" name="pageSectionLink">
+        </label>
+        <label class="form-field">
+          Ordem
+          <input type="number" name="pageSectionOrder" min="0" value="0">
+        </label>
+        <label class="form-field">
+          Imagem (upload)
+          <input type="file" id="pageSectionImage" accept="image/*">
+        </label>
+        <div class="image-preview" id="pageSectionPreview"></div>
+        <label class="form-field">
+          URL da imagem
+          <input type="text" name="pageSectionImageUrl">
+        </label>
+        <div class="form-actions">
+          <button class="btn-primary" type="submit" id="pageSectionSubmit">Salvar secao</button>
+        </div>
+        <div class="alert" id="pageSectionModalError" hidden></div>
+      </form>
+    </div>
+  </div>
+  <script src="/admin/js/admin.js"></script>
+</body>
+</html>
