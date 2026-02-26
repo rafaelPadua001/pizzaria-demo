@@ -188,18 +188,17 @@ function addWhatsAppButton(link) {
 }
 
 function addAssistantButtons(buttons) {
-    if (!Array.isArray(buttons) || !buttons.length) return;
+    if (!buttons || !buttons.length) return;
 
     const wrap = document.createElement("div");
     wrap.className = "pcw-buttons";
 
     buttons.forEach((btn) => {
-        if (!btn || !btn.url) return;
         const a = document.createElement("a");
         a.href = btn.url;
         a.target = "_blank";
         a.rel = "noopener noreferrer";
-        a.textContent = btn.title || "Pagar agora";
+        a.textContent = btn.title;
         a.className = "pcw-btn"; // você pode estilizar no CSS
         wrap.appendChild(a);
     });
@@ -255,19 +254,17 @@ async function sendMessage() {
 
         // Renderiza a resposta do assistente
         const assistantText =
-            data.text || data.response || data.message || data.reply || "Ok! Posso ajudar em mais algo?";
+            data.response || data.message || data.reply || "Ok! Posso ajudar em mais algo?";
         addMessage("assistant", assistantText);
 
         // Se vier link do WhatsApp, mostra o botao
-        if (data && Array.isArray(data.buttons) && data.buttons.length > 0) {
-            addAssistantButtons(data.buttons);
-        } else if (data && data.checkout_url) {
-            addAssistantButtons([{ title: "Pagar agora", url: data.checkout_url }]);
-        }
         if (data && data.whatsapp_link) {
-            addWhatsAppButton(data.whatsapp_link);
+           addWhatsAppButton(data.whatsapp_link);
         }
-
+        if(data && data.buttons){
+            addAssistantButtons(data.buttons);
+        }
+        
         
     } catch (err) {
         console.error("Erro no chat:", err);

@@ -20,15 +20,6 @@ uvicorn app.main:app --reload
 
 Crie um `.env` com as variaveis do `.env.example`.
 
-## Frontend
-
-```powershell
-cd C:\GitHub\pizzaria-demo\backend
-.venv\Scripts\activate
-uvicorn app.main:app --reload
-# Acesse: http://127.0.0.1:8000
-```
-
 ## Seed admin
 
 ```powershell

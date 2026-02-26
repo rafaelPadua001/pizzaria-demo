@@ -24,20 +24,21 @@ def create_checkout(
     sdk = mercadopago.SDK(access_token)
 
     preference_data = {
-        "items": [
-            {
-                "title": item.product_name,
-                "quantity": item.quantity,
-                "unit_price": float(item.unit_price),
-            }
-            for item in order.items
-        ],
-        "back_urls": {
-            "success": "http://localhost:8000/payment/success",
-            "failure": "http://localhost:8000/payment/failure",
-            "pending": "http://localhost:8000/payment/pending",
-        },
-    }
+            "items": [
+                {
+                    "title": item.product_name,
+                    "quantity": item.quantity,
+                    "unit_price": float(item.unit_price),
+                }
+                for item in order.items
+            ],
+            "back_urls": {
+                "success": "http://localhost:8000/payment/success",
+                "failure": "http://localhost:8000/payment/failure",
+                "pending": "http://localhost:8000/payment/pending",
+            },
+        }
+
 
    # if notification_url:
    #     preference_data["notification_url"] = notification_url
