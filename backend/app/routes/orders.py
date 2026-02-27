@@ -42,6 +42,7 @@ def _create_order_from_payload(payload: OrderCreate, db: Session) -> Order:
         total_amount=total,
         delivery_fee=delivery_fee,
         status="pending",
+        payment_status="pending",
     )
     db.add(order)
     db.flush()
@@ -79,7 +80,6 @@ def get_order(
 def create_order(
     payload: OrderCreate,
     db: Session = Depends(get_db),
-    _admin=Depends(get_current_admin),
 ) -> Order:
     return _create_order_from_payload(payload, db)
 
