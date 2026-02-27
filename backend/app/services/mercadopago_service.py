@@ -77,7 +77,15 @@ def create_preference(
         preference_data["back_urls"] = back_urls
 
     if notification_url:
-        preference_data["notification_url"] = notification_url
+        notification_url = notification_url.strip()
+
+        if notification_url.startswith("https://"):
+            preference_data["notification_url"] = notification_url
+        else:
+            logger.warning(
+                "notification_url ignorada por nao ser HTTPS valida: %s",
+                notification_url,
+            )
 
     mp_response = sdk.preference().create(preference_data)
     logger.error("MP FULL RESPONSE: %s", json.dumps(mp_response, indent=2, ensure_ascii=False))
