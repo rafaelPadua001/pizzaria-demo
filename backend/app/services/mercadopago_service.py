@@ -33,9 +33,9 @@ def create_checkout(
                 for item in order.items
             ],
             "back_urls": {
-                "success": "http://localhost:8000/payment/success",
-                "failure": "http://localhost:8000/payment/failure",
-                "pending": "http://localhost:8000/payment/pending",
+                "success": "https://pizzaria-demo.onrender.com/payment/success",
+                "failure": "https://pizzaria-demo.onrender.com/payment/failure",
+                "pending": "https://pizzaria-demo.onrender.com/payment/pending",
             },
         }
 
