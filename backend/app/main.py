@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from .database import Base, engine, get_db
 from .models import Admin, Category, Product, Order, OrderItem, PageSection, Page, Restaurant  # noqa
-from .routes import admin, auth, categories, products, orders, admin_content, content, catalog, checkout, webhook
+from .routes import admin, auth, categories, products, orders, admin_content, content, catalog, checkout, webhook, payments
 from .utils.time import get_current_time
 
 
@@ -62,6 +62,7 @@ app.include_router(content.router)
 app.include_router(catalog.router)
 app.include_router(checkout.router)
 app.include_router(webhook.router)
+app.include_router(payments.router)
 
 @app.get("/admin")
 def serve_admin():

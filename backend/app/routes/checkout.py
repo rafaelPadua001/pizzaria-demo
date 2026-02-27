@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import Order, OrderItem, Restaurant
 from ..schemas import CheckoutRequest, CheckoutResponse, OrderCreatedResponse
-from ..services.mercadopago_service import create_checkout
+from ..services.mercadopago_service import create_preference
 
 
 router = APIRouter(prefix="/api/orders", tags=["Checkout"])
@@ -24,6 +24,10 @@ def require_api_key(x_api_key: str | None = Header(default=None, alias="X-API-KE
         )
     if not x_api_key or not secrets.compare_digest(x_api_key, expected):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="API key invalida.")
+
+
+def _get_base_url() -> str:
+    return os.getenv("BASE_URL", "http://127.0.0.1:8000").rstrip("/")
 
 
 @router.post("/checkout", response_model=CheckoutResponse, status_code=status.HTTP_201_CREATED)
@@ -77,14 +81,23 @@ def create_order_checkout(
     order.total_amount = total + delivery_fee
     order.items = order_items
 
+    base_url = _get_base_url()
     notification_url = os.getenv(
         "MERCADOPAGO_NOTIFICATION_URL",
-        "http://127.0.0.1:8000/webhook/mercadopago",
+        f"{base_url}/webhook/mercadopago",
     )
+    back_urls = {
+        "success": f"{base_url}/payment/success",
+        "failure": f"{base_url}/payment/failure",
+        "pending": f"{base_url}/payment/pending",
+    }
 
     try:
-        preference_id, checkout_url = create_checkout(
-            order, restaurant, notification_url=notification_url
+        preference_id, checkout_url = create_preference(
+            order,
+            restaurant,
+            notification_url=notification_url,
+            back_urls=back_urls,
         )
     except Exception as exc:  # noqa: BLE001
         db.rollback()
@@ -180,14 +193,23 @@ def create_checkout_for_order(
             status_code=status.HTTP_404_NOT_FOUND, detail="Restaurante nao encontrado."
         )
 
+    base_url = _get_base_url()
     notification_url = os.getenv(
         "MERCADOPAGO_NOTIFICATION_URL",
-        "http://127.0.0.1:8000/webhook/mercadopago",
+        f"{base_url}/webhook/mercadopago",
     )
+    back_urls = {
+        "success": f"{base_url}/payment/success",
+        "failure": f"{base_url}/payment/failure",
+        "pending": f"{base_url}/payment/pending",
+    }
 
     try:
-        preference_id, checkout_url = create_checkout(
-            order, restaurant, notification_url=notification_url
+        preference_id, checkout_url = create_preference(
+            order,
+            restaurant,
+            notification_url=notification_url,
+            back_urls=back_urls,
         )
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(

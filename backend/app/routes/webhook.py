@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import hmac
 import logging
 import os
 from typing import Any
@@ -41,6 +43,11 @@ def _safe_log_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "action": payload.get("action"),
         "data_id": data.get("id") if isinstance(data, dict) else payload.get("id"),
     }
+
+
+def _is_valid_signature(raw_body: bytes, signature: str, secret: str) -> bool:
+    digest = hmac.new(secret.encode("utf-8"), raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(digest, signature)
 
 
 def _get_tokens(db: Session, preferred: str | None = None) -> list[str]:
@@ -155,10 +162,20 @@ async def mercadopago_webhook(
     request: Request,
     background_tasks: BackgroundTasks,
 ) -> dict[str, str]:
+    raw_body = await request.body()
     try:
         payload = await request.json()
     except Exception:  # noqa: BLE001
         payload = {}
+
+    secret = os.getenv("MERCADOPAGO_WEBHOOK_SECRET", "")
+    signature = request.headers.get("X-Signature") or request.headers.get("X-Webhook-Signature")
+    if secret and signature:
+        if not _is_valid_signature(raw_body, signature, secret):
+            logger.warning("Webhook com assinatura invalida.")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Assinatura invalida.")
+    elif secret:
+        logger.warning("Webhook recebido sem assinatura configurada.")
 
     payment_id = _extract_payment_id(payload, request)
     logger.info("Webhook Mercado Pago recebido: %s", _safe_log_payload(payload))

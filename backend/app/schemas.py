@@ -188,6 +188,16 @@ class CheckoutResponse(BaseModel):
         orm_mode = True
 
 
+class PaymentCreate(BaseModel):
+    order_id: int
+
+
+class PaymentResponse(BaseModel):
+    order_id: int
+    preference_id: str
+    init_point: str
+
+
 class PageSectionBase(BaseModel):
     name: str
     title: str | None = None
