@@ -133,7 +133,11 @@ def _process_payment(payment_id: str | None, payload: dict[str, Any]) -> None:
                 order = None
 
         if not order:
-            logger.warning("Pedido nao encontrado para payment_id=%s.", payment_id)
+            logger.info(
+                "Webhook ignorado (pedido nao encontrado). payment_id=%s external_reference=%s",
+                payment_id,
+                payment.get("external_reference"),
+            )
             return
 
         status_value = str(payment.get("status", "")).lower()
