@@ -87,9 +87,9 @@ def create_order_checkout(
         f"{base_url}/webhook/mercadopago",
     )
     back_urls = {
-        "success": f"{base_url}/payment/success",
-        "failure": f"{base_url}/payment/failure",
-        "pending": f"{base_url}/payment/pending",
+        "success": f"{base_url}/payment.html",
+        "failure": f"{base_url}/payment.html",
+        "pending": f"{base_url}/payment.html",
     }
 
     try:
