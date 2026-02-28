@@ -97,7 +97,7 @@ def payment_status(payment_id: str, db: Session = Depends(get_db)):
     return {"payment_status": order.payment_status}
 
 
-@router.get("/api/payment-status/{payment_id}")
+@router.get("/payment-status/{payment_id}")
 def payment_status_api(payment_id: str, db: Session = Depends(get_db)):
     return payment_status(payment_id=payment_id, db=db)
 
