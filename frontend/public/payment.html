@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Status do pagamento | Pizzaria Demo</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <span class="site-brand">
+        <img class="site-brand-logo" src="assets/icons/logo.webp" alt="Pizzaria Demo">
+        <span class="site-brand-text">Pizzaria Demo</span>
+      </span>
+      <a class="simple-link" href="index.html">Voltar</a>
+    </div>
+  </header>
+
+  <main class="checkout-page">
+    <header class="checkout-header">
+      <h1>Status do pagamento</h1>
+      <p>Acompanhe a confirmacao do seu pedido.</p>
+    </header>
+
+    <section class="checkout-section" aria-live="polite">
+      <div id="payment-result">
+        <h2>Verificando pagamento...</h2>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/payment.js"></script>
+</body>
+</html>

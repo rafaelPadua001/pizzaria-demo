@@ -52,9 +52,9 @@ def create_payment(
 
     base_url = _get_base_url()
     back_urls = {
-        "success": f"{base_url}/payment/success",
-        "failure": f"{base_url}/payment/failure",
-        "pending": f"{base_url}/payment/pending",
+        "success": f"{base_url}/payment.html",
+        "failure": f"{base_url}/payment.html",
+        "pending": f"{base_url}/payment.html",
     }
     notification_url = os.getenv(
         "MERCADOPAGO_NOTIFICATION_URL",
@@ -85,17 +85,33 @@ def create_payment(
         init_point=init_point,
     )
 
+@router.get("/payment-status/{payment_id}")
+def payment_status(payment_id: str, db: Session = Depends(get_db)):
+    order = db.query(Order).filter(
+        Order.mercadopago_payment_id == payment_id
+    ).first()
 
-@router.get("/payment/success", response_class=HTMLResponse)
-def payment_success() -> str:
-    return "<h1>Pagamento aprovado</h1><p>Obrigado! Seu pedido foi confirmado.</p>"
+    if not order:
+        return {"payment_status": "not_found"}
+    
+    return {"payment_status": order.payment_status}
 
 
-@router.get("/payment/failure", response_class=HTMLResponse)
-def payment_failure() -> str:
-    return "<h1>Pagamento nao aprovado</h1><p>Voce pode tentar novamente.</p>"
+@router.get("/api/payment-status/{payment_id}")
+def payment_status_api(payment_id: str, db: Session = Depends(get_db)):
+    return payment_status(payment_id=payment_id, db=db)
 
-
-@router.get("/payment/pending", response_class=HTMLResponse)
-def payment_pending() -> str:
-    return "<h1>Pagamento pendente</h1><p>Estamos aguardando a confirmacao.</p>"
+#@router.get("/payment/success", response_class=HTMLResponse)
+#def payment_success() -> str:
+#    return "<h1>Pagamento aprovado</h1><p>sp>"
+#
+#
+#@router.get("/payment/failure", response_class=HTMLResponse)
+#def payment_failure() -> str:
+#    return "<h1>Pagamento nao aprovado</h1><p>Voce pode tentar novamente.</p>"
+#
+#
+#@router.get("/payment/pending", response_class=HTMLResponse)
+#def payment_pending() -> str:
+#    return "<h1>Pagamento pendente</h1><p>Estamos aguardando a confirmacao.</p>"
+#

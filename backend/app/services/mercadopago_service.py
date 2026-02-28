@@ -8,7 +8,7 @@ import mercadopago
 import json
 from ..models import Order, Restaurant
 
-
+base_url = os.getenv("BASE_URL")
 logger = logging.getLogger("mercadopago.service")
 
 
@@ -71,6 +71,12 @@ def create_preference(
     preference_data: dict[str, Any] = {
         "items": items,
         "external_reference": str(order.id),
+        "back_urls": {
+            "success": f"{base_url}/payments/payment.html",
+            "failure": f"{base_url}/payments/payment.html",
+            "pending": f"{base_url}/payments/payment.html",
+        },
+        "auto_return": "approved"
     }
 
     if back_urls:
