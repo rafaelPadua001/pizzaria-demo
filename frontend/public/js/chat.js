@@ -2,8 +2,8 @@
 // Configure aqui o restaurante para reuso em outros clientes
 const RESTAURANT_ID = "pizzaria_napoli";
 // Endpoint do backend local (troque em producao)
-//const CHAT_ENDPOINT = `https://assistant-restaurant.onrender.com/restaurant/${RESTAURANT_ID}/chat`;
-const CHAT_ENDPOINT = `http://127.0.0.1:8001/restaurant/${RESTAURANT_ID}/chat`;
+const CHAT_ENDPOINT = `https://assistant-restaurant.onrender.com/restaurant/${RESTAURANT_ID}/chat`;
+//const CHAT_ENDPOINT = `http://127.0.0.1:8001/restaurant/${RESTAURANT_ID}/chat`;
 
 //Config Restaurant - pode ser carregada do backend para manter horarios dinamicos sem precisar atualizar o frontend
 const restaurantConfig = {
