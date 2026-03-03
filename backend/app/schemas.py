@@ -129,6 +129,7 @@ class OrderItemCreate(BaseModel):
 class OrderCreate(BaseModel):
     customer_name: str | None = None
     customer_phone: str | None = None
+    session_id: str | None = None
     restaurant_id: int | None = None
     total_amount: float | None = None
     delivery_fee: float | None = None
@@ -146,6 +147,7 @@ class CheckoutRequest(BaseModel):
     restaurant_slug: str
     customer_name: str | None = None
     customer_phone: str | None = None
+    session_id: str | None = None
     delivery_fee: float | None = None
     items: list[CheckoutItemCreate]
 
@@ -169,6 +171,7 @@ class OrderResponse(BaseModel):
     id: int
     customer_name: str | None = None
     customer_phone: str | None = None
+    session_id: str | None = None
     restaurant_id: int | None = None
     total_amount: float
     delivery_fee: float | None = None
@@ -196,6 +199,10 @@ class PaymentResponse(BaseModel):
     order_id: int
     preference_id: str
     init_point: str
+
+
+class OrderStatusUpdate(BaseModel):
+    status: str
 
 
 class PageSectionBase(BaseModel):

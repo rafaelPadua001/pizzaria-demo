@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import Order, OrderItem
-from ..schemas import OrderCreate, OrderResponse
+from ..schemas import OrderCreate, OrderResponse, OrderStatusUpdate
+from ..services.order_service import update_order_status
 from .admin import get_current_admin
 
 
@@ -39,6 +40,7 @@ def _create_order_from_payload(payload: OrderCreate, db: Session) -> Order:
         restaurant_id=payload.restaurant_id,
         customer_name=payload.customer_name,
         customer_phone=payload.customer_phone,
+        session_id=payload.session_id,
         total_amount=total,
         delivery_fee=delivery_fee,
         status="pending",
@@ -90,3 +92,27 @@ def create_order_public(
     db: Session = Depends(get_db),
 ) -> Order:
     return _create_order_from_payload(payload, db)
+
+
+@router.patch("/orders/{order_id}/status", response_model=OrderResponse)
+def update_order_status_admin(
+    order_id: int,
+    payload: OrderStatusUpdate,
+    db: Session = Depends(get_db),
+    _admin=Depends(get_current_admin),
+) -> Order:
+    try:
+        update_order_status(order_id, payload.status)
+    except LookupError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
+
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+    return order

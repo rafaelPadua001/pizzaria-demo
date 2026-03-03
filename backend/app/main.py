@@ -114,6 +114,7 @@ def startup_check():
         # Order history: novas colunas e ajustes
         connection.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_name VARCHAR(120)"))
         connection.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_phone VARCHAR(20)"))
+        connection.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS session_id VARCHAR(120)"))
         connection.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS total_amount DOUBLE PRECISION"))
         connection.execute(
             text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_fee DOUBLE PRECISION DEFAULT 0.0")
@@ -123,6 +124,40 @@ def startup_check():
         connection.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS mercadopago_preference_id VARCHAR(255)"))
         connection.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS mercadopago_payment_id VARCHAR(255)"))
         connection.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS status VARCHAR(30) DEFAULT 'pending'"))
+
+        connection.execute(text("""
+        DO $$
+        DECLARE
+          constraint_name text;
+        BEGIN
+          SELECT conname INTO constraint_name
+          FROM pg_constraint c
+          JOIN pg_class t ON t.oid = c.conrelid
+          JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = ANY(c.conkey)
+          WHERE t.relname = 'orders' AND a.attname = 'status' AND c.contype = 'c'
+          LIMIT 1;
+
+          IF constraint_name IS NOT NULL THEN
+            EXECUTE format('ALTER TABLE orders DROP CONSTRAINT %I', constraint_name);
+          END IF;
+        END $$;
+        """))
+
+        connection.execute(text("""
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint WHERE conname = 'orders_status_check'
+          ) THEN
+            ALTER TABLE orders
+            ADD CONSTRAINT orders_status_check
+            CHECK (status IN (
+              'pending', 'paid', 'preparing', 'ready', 'sent', 'cancelled',
+              'confirmed', 'delivered', 'canceled'
+            ));
+          END IF;
+        END $$;
+        """))
 
         connection.execute(text("""
         DO $$
