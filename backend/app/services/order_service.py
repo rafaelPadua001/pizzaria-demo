@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import json
 import logging
 import os
-from urllib import error as url_error
-from urllib import request as url_request
+
+import requests
 
 from ..database import SessionLocal
 from ..models import Order
@@ -12,18 +11,6 @@ from ..models.order import ORDER_STATUSES
 
 
 logger = logging.getLogger("order.service")
-
-STATUS_LABELS = {
-    "pending": "Aguardando pagamento",
-    "paid": "Pagamento confirmado",
-    "preparing": "Em preparo \U0001F355",
-    "ready": "Pronto para entrega",
-    "sent": "Saiu para entrega \U0001F697",
-    "cancelled": "Pedido cancelado",
-    "confirmed": "Pagamento confirmado",
-    "delivered": "Pedido entregue",
-    "canceled": "Pedido cancelado",
-}
 
 
 def _normalize_status(value: str) -> str:
@@ -35,51 +22,34 @@ def _assistant_notify_url() -> str:
 
 
 def _send_assistant_notification(session_id: str, message: str) -> None:
-    notify_url = _assistant_notify_url()
-    if not notify_url:
-        logger.warning(
-            "ASSISTANT_NOTIFY_URL nao configurada. Notificacao nao enviada para session_id=%s.",
-            session_id,
-        )
+    assistant_url = _assistant_notify_url()
+    if not assistant_url:
+        print("ASSISTANT_NOTIFY_URL nao configurada")
         return
 
-    payload = json.dumps({"session_id": session_id, "message": message}).encode("utf-8")
-    request = url_request.Request(notify_url, data=payload, method="POST")
-    request.add_header("Content-Type", "application/json")
-
+    payload = {"session_id": session_id, "message": message}
     try:
-        with url_request.urlopen(request, timeout=5) as response:
-            response_body = response.read().decode("utf-8")
-            logger.info(
-                "Notificacao enviada (status=%s) session_id=%s response=%s",
-                response.status,
-                session_id,
-                response_body,
-            )
-    except url_error.HTTPError as exc:
-        response_body = exc.read().decode("utf-8") if exc.fp else ""
-        logger.error(
-            "Erro HTTP ao notificar assistant (status=%s): %s",
-            exc.code,
-            response_body,
+        response = requests.post(assistant_url, json=payload, timeout=5)
+    except Exception as exc:  # noqa: BLE001
+        logger.error("Falha ao notificar assistant.", exc_info=exc)
+        return
+
+    if response.status_code != 200:
+        print(
+            f"Erro ao notificar assistant (status={response.status_code}): {response.text}"
         )
-    except url_error.URLError as exc:
-        logger.error("Falha de conexao ao notificar assistant: %s", exc.reason)
-    except Exception:
-        logger.exception("Erro inesperado ao notificar assistant.")
+    else:
+        print("Notificacao enviada com sucesso.")
 
 
 def notify_order_status_change(order: Order) -> None:
-    status_label = STATUS_LABELS.get(order.status, order.status)
-    message = f"Pedido #{order.id}\nStatus atual: {status_label}"
-
     if not order.session_id:
-        logger.warning(
-            "Pedido %s sem session_id. Notificacao nao enviada.",
-            order.id,
-        )
+        print(f"Pedido {order.id} sem session_id. Notificacao nao enviada.")
         return
 
+    status_raw = getattr(order, "order_status", None) or order.status or ""
+    status_value = str(status_raw).upper()
+    message = f"🍕 Pedido #{order.id}\nStatus atualizado: {status_value}"
     _send_assistant_notification(order.session_id, message)
 
 
