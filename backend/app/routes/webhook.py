@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from ..database import SessionLocal
 from ..models import Order, Restaurant
 from ..services.mercadopago_service import get_payment
+from ..services.order_service import update_order_status
 
 
 logger = logging.getLogger("mercadopago.webhook")
@@ -145,9 +146,10 @@ def _process_payment(payment_id: str | None, payload: dict[str, Any]) -> None:
         if preference_id:
             order.mercadopago_preference_id = str(preference_id)
 
+        new_status = None
         if status_value in {"approved", "authorized"}:
             order.payment_status = "approved"
-            order.status = "confirmed"
+            new_status = "paid"
         elif status_value in {"rejected", "cancelled", "refunded", "charged_back"}:
             order.payment_status = "rejected"
         elif status_value:
@@ -159,6 +161,17 @@ def _process_payment(payment_id: str | None, payload: dict[str, Any]) -> None:
             order.id,
             order.payment_status,
         )
+
+        if new_status:
+            try:
+                update_order_status(order.id, new_status)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "Falha ao atualizar status do pedido %s para %s.",
+                    order.id,
+                    new_status,
+                    exc_info=exc,
+                )
 
 
 @router.post("/mercadopago", status_code=status.HTTP_200_OK)

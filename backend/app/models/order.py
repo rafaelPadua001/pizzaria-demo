@@ -8,7 +8,17 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from ..database import Base
 
 
-ORDER_STATUSES = ("pending", "confirmed", "delivered", "canceled")
+ORDER_STATUSES = (
+    "pending",
+    "paid",
+    "preparing",
+    "ready",
+    "sent",
+    "cancelled",
+    "confirmed",
+    "delivered",
+    "canceled",
+)
 
 
 class Order(Base):
@@ -18,6 +28,7 @@ class Order(Base):
     restaurant_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("restaurants.id"), nullable=True, index=True
     )
+    session_id: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
     customer_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     customer_phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
     total_amount: Mapped[float] = mapped_column(Float, nullable=False)
