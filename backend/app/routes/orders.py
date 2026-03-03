@@ -15,6 +15,8 @@ def _create_order_from_payload(payload: OrderCreate, db: Session) -> Order:
     if not payload.items:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Items required")
 
+    print("DEBUG session_id recebido:", payload.session_id)
+
     computed_total = 0.0
     order_items: list[OrderItem] = []
 

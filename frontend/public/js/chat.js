@@ -4,6 +4,10 @@ const RESTAURANT_ID = "pizzaria_napoli";
 // Endpoint do backend local (troque em producao)
 const CHAT_ENDPOINT = `https://assistant-restaurant.onrender.com/restaurant/${RESTAURANT_ID}/chat`;
 //const CHAT_ENDPOINT = `http://127.0.0.1:8001/restaurant/${RESTAURANT_ID}/chat`;
+const NOTIFICATIONS_ENDPOINT = CHAT_ENDPOINT.replace(
+    /\/restaurant\/[^/]+\/chat$/,
+    "/assistant/notifications"
+);
 
 //Config Restaurant - pode ser carregada do backend para manter horarios dinamicos sem precisar atualizar o frontend
 const restaurantConfig = {
@@ -212,6 +216,26 @@ function scrollToBottom() {
     messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
+async function pollNotifications() {
+    if (!state || !state.session_id) return;
+
+    try {
+        const response = await fetch(`${NOTIFICATIONS_ENDPOINT}/${state.session_id}`);
+        if (!response.ok) return;
+        const data = await response.json();
+
+        if (data && Array.isArray(data.messages)) {
+            data.messages.forEach((item) => {
+                if (item && item.message) {
+                    addMessage("assistant", item.message);
+                }
+            });
+        }
+    } catch (err) {
+        console.error("Erro ao buscar notificacoes:", err);
+    }
+}
+
 // Envia mensagem para o backend
 async function sendMessage() {
     const text = inputEl.value.trim();
@@ -264,6 +288,7 @@ async function sendMessage() {
         if(data && data.buttons){
             addAssistantButtons(data.buttons);
         }
+        await pollNotifications();
         
         
     } catch (err) {
@@ -291,3 +316,7 @@ closeBtn.addEventListener("click", () => {
 
 // Mensagem inicial opcional
 addMessage("assistant", "Ola! Posso ajudar com seu pedido?");
+
+setInterval(() => {
+    pollNotifications();
+}, 4000);

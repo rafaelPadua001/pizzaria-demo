@@ -17,8 +17,7 @@ class AdminResponse(BaseModel):
     id: int
     username: str
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class CategoryBase(BaseModel):
@@ -52,8 +51,7 @@ class CategoryResponse(CategoryBase):
     created_at: datetime
     updated_at: datetime | None = None
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class CategoryPublicResponse(BaseModel):
@@ -64,8 +62,7 @@ class CategoryPublicResponse(BaseModel):
     slug: str
     image_url: str | None = None
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class ProductPublicResponse(BaseModel):
@@ -75,8 +72,7 @@ class ProductPublicResponse(BaseModel):
     price: float
     image_url: str | None = None
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class CategoryDetailResponse(BaseModel):
@@ -86,8 +82,7 @@ class CategoryDetailResponse(BaseModel):
     slug: str
     products: list[ProductPublicResponse]
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class ProductBase(BaseModel):
@@ -115,8 +110,7 @@ class ProductUpdate(BaseModel):
 class ProductResponse(ProductBase):
     id: int
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class OrderItemCreate(BaseModel):
@@ -163,8 +157,7 @@ class OrderItemResponse(BaseModel):
     quantity: int
     unit_price: float
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class OrderResponse(BaseModel):
@@ -187,8 +180,7 @@ class CheckoutResponse(BaseModel):
     order_id: int
     checkout_url: str
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class PaymentCreate(BaseModel):
@@ -234,8 +226,7 @@ class PageSectionResponse(PageSectionBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class PageBase(BaseModel):
@@ -259,5 +250,4 @@ class PageResponse(PageBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
