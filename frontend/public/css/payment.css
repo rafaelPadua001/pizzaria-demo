@@ -1,0 +1,36 @@
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: #f8f7f4;
+  color: #1d1d1d;
+}
+
+.payment-status {
+  max-width: 640px;
+  margin: 80px auto;
+  padding: 32px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+
+.payment-status h1 {
+  margin-bottom: 12px;
+  font-size: 28px;
+}
+
+.payment-status p {
+  margin-bottom: 24px;
+  font-size: 16px;
+}
+
+.payment-link {
+  display: inline-block;
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: #d8491a;
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 600;
+}
