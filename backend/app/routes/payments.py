@@ -11,7 +11,12 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import Order, Restaurant
 from ..schemas import PaymentCreate, PaymentResponse
-from ..services.mercadopago_service import create_preference
+from ..services.mercadopago_service import (
+    check_payment_status,
+    create_preference,
+    get_payment,
+)
+from ..services.order_service import update_order_status
 
 
 logger = logging.getLogger("payments")
@@ -91,9 +96,79 @@ def payment_status(payment_id: str, db: Session = Depends(get_db)):
         Order.mercadopago_payment_id == payment_id
     ).first()
 
+    tokens: list[str] = []
+    env_token = os.getenv("MERCADOPAGO_ACCESS_TOKEN", "")
+    if env_token:
+        tokens.append(env_token)
+
+    if not tokens:
+        tokens = [
+            restaurant.mercadopago_access_token
+            for restaurant in db.query(Restaurant).all()
+            if restaurant.mercadopago_access_token
+        ]
+
+    payment = None
+    try:
+        payment = check_payment_status(payment_id)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Falha ao consultar pagamento %s.", payment_id, exc_info=exc)
+
+    if not payment:
+        for token in tokens:
+            try:
+                payment = get_payment(payment_id, token)
+                break
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Falha ao consultar pagamento %s.", payment_id, exc_info=exc)
+
+    if payment:
+        preference_id = payment.get("preference_id")
+        external_ref = payment.get("external_reference")
+
+        if not order and preference_id:
+            order = (
+                db.query(Order)
+                .filter(Order.mercadopago_preference_id == str(preference_id))
+                .first()
+            )
+
+        if not order and external_ref:
+            try:
+                order_id = int(str(external_ref))
+                order = db.query(Order).filter(Order.id == order_id).first()
+            except ValueError:
+                order = None
+
+        if order:
+            order.mercadopago_payment_id = str(payment_id)
+            status_value = str(payment.get("status", "")).lower()
+            if status_value:
+                order.payment_status = status_value
+            db.commit()
+
+            if status_value in {"approved", "authorized"}:
+                try:
+                    update_order_status(order.id, "paid")
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning(
+                        "Falha ao atualizar status do pedido %s para paid.",
+                        order.id,
+                        exc_info=exc,
+                    )
+            elif status_value in {"rejected", "cancelled"}:
+                try:
+                    update_order_status(order.id, "cancelled")
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning(
+                        "Falha ao atualizar status do pedido %s para cancelled.",
+                        order.id,
+                        exc_info=exc,
+                    )
+
     if not order:
         return {"payment_status": "not_found"}
-    
+
     return {"payment_status": order.payment_status}
 
 

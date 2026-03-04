@@ -4,120 +4,159 @@ import logging
 import os
 from typing import Any, Tuple
 
-import mercadopago
-import json
+import requests
+
 from ..models import Order, Restaurant
 
-base_url = os.getenv("BASE_URL")
+
 logger = logging.getLogger("mercadopago.service")
 
+MP_PREFERENCE_URL = "https://api.mercadopago.com/checkout/preferences"
+MP_PAYMENT_URL = "https://api.mercadopago.com/v1/payments/{payment_id}"
 
-def _normalize_items(order: Order) -> list[dict[str, Any]]:
+
+def _get_access_token(restaurant: Restaurant | None = None) -> str:
+    access_token = os.getenv("MERCADO_PAGO_ACCESS_TOKEN")
+    if not access_token and restaurant:
+        access_token = restaurant.mercadopago_access_token
+    if not access_token:
+        access_token = os.getenv("MERCADOPAGO_ACCESS_TOKEN", "")
+    if not access_token:
+        raise RuntimeError("Mercado Pago access token nao configurado.")
+    return access_token
+
+
+def _is_sandbox(access_token: str) -> bool:
+    return access_token.startswith("TEST-")
+
+
+def _build_items(order: Order) -> list[dict[str, Any]]:
     items: list[dict[str, Any]] = []
     for item in order.items:
-        quantity = int(item.quantity)
-        unit_price = float(item.unit_price)
-        if quantity <= 0:
-            raise RuntimeError("Quantidade de item invalida para preferencia.")
+        title = getattr(item, "name", None) or getattr(item, "product_name", None)
+        unit_price = getattr(item, "price", None) or getattr(item, "unit_price", None)
+        quantity = getattr(item, "quantity", None)
+
+        if not title:
+            raise ValueError("Item sem titulo para preferencia.")
+        if not quantity or int(quantity) <= 0:
+            raise ValueError("Quantidade invalida para preferencia.")
+        if unit_price is None or float(unit_price) <= 0:
+            raise ValueError("Preco invalido para preferencia.")
+
         items.append(
             {
-                "title": item.product_name,
-                "quantity": quantity,
-                "unit_price": unit_price,
+                "title": str(title),
+                "quantity": int(quantity),
                 "currency_id": "BRL",
+                "unit_price": float(unit_price),
             }
         )
     return items
 
 
-def _extract_preference_payload(mp_response: Any) -> tuple[dict[str, Any] | None, str | None]:
-    if not isinstance(mp_response, dict):
-        return None, "Resposta invalida do Mercado Pago."
-
-    status = mp_response.get("status")
-    if status and status not in {200, 201}:
-        message = mp_response.get("message") or mp_response.get("error") or "Erro Mercado Pago."
-        return None, message
-
-    if "response" in mp_response and isinstance(mp_response["response"], dict):
-        return mp_response["response"], None
-
-    if "body" in mp_response and isinstance(mp_response["body"], dict):
-        return mp_response["body"], None
-
-    if "init_point" in mp_response and "id" in mp_response:
-        return mp_response, None
-
-    message = mp_response.get("message") or mp_response.get("error")
-    return None, message
-
-
 def create_preference(
     order: Order,
-    restaurant: Restaurant,
+    restaurant: Restaurant | None = None,
     notification_url: str | None = None,
     back_urls: dict | None = None,
 ) -> Tuple[str, str]:
-    access_token = restaurant.mercadopago_access_token or os.getenv("MERCADOPAGO_ACCESS_TOKEN", "")
-    if not access_token:
-        raise RuntimeError("Mercado Pago access token nao configurado para o restaurante.")
+    access_token = _get_access_token(restaurant)
+    is_sandbox = _is_sandbox(access_token)
 
-    items = _normalize_items(order)
+    if not order.total_amount or order.total_amount <= 0:
+        raise ValueError("Order total invalido para pagamento.")
+
+    items = _build_items(order)
     if not items:
-        raise RuntimeError("Pedido sem itens para criar preferencia.")
-
-    sdk = mercadopago.SDK(access_token)
+        raise ValueError("Pedido sem itens para pagamento.")
 
     preference_data: dict[str, Any] = {
         "items": items,
         "external_reference": str(order.id),
-        "back_urls": {
-            "success": f"{base_url}/payments/payment.html",
-            "failure": f"{base_url}/payments/payment.html",
-            "pending": f"{base_url}/payments/payment.html",
-        },
-        "auto_return": "approved"
+        "auto_return": "approved",
     }
 
     if back_urls:
         preference_data["back_urls"] = back_urls
 
-    if notification_url:
-        notification_url = notification_url.strip()
-
-        if notification_url.startswith("https://"):
-            preference_data["notification_url"] = notification_url
+    frontend_url = os.getenv("FRONTEND_BASE_URL")
+    if preference_data.get("auto_return") == "approved":
+        if not frontend_url:
+            logger.warning("auto_return_enabled_without_frontend_url")
         else:
-            logger.warning(
-                "notification_url ignorada por nao ser HTTPS valida: %s",
-                notification_url,
-            )
+            frontend_url = frontend_url.rstrip("/")
+            preference_data["back_urls"] = {
+                "success": f"{frontend_url}/payment/success",
+                "failure": f"{frontend_url}/payment/failure",
+                "pending": f"{frontend_url}/payment/pending",
+            }
 
-    mp_response = sdk.preference().create(preference_data)
-    logger.error("MP FULL RESPONSE: %s", json.dumps(mp_response, indent=2, ensure_ascii=False))
+    notification_url = notification_url or os.getenv("MERCADOPAGO_NOTIFICATION_URL")
+    if notification_url:
+        preference_data["notification_url"] = notification_url
+    else:
+        logger.warning("Webhook nao configurado. Pedido pode ficar pending.")
 
-    preference, error_message = _extract_preference_payload(mp_response)
-    if not preference:
-        raise RuntimeError(error_message or "Resposta invalida do Mercado Pago.")
+    email = getattr(order, "customer_email", None)
+    if email and str(email).strip():
+        preference_data["payer"] = {"email": str(email).strip()}
 
-    if preference.get("error"):
-        raise RuntimeError(str(preference.get("error")))
+    logger.info(
+        "mp_preference_create",
+        extra={
+            "order_id": order.id,
+            "sandbox": is_sandbox,
+            "has_email": bool(email and str(email).strip()),
+            "total": order.total_amount,
+        },
+    )
 
-    if mp_response.get("status") not in {200, 201} and preference.get("message"):
-        raise RuntimeError(str(preference.get("message")))
+    try:
+        response = requests.post(
+            MP_PREFERENCE_URL,
+            json=preference_data,
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=10,
+        )
+    except requests.RequestException:
+        logger.exception("mp_request_failure")
+        raise
 
-    preference_id = preference.get("id")
-    checkout_url = preference.get("init_point") or preference.get("sandbox_init_point")
+    try:
+        response_payload = response.json()
+    except ValueError:
+        logger.error(
+            "mp_preference_error",
+            extra={"order_id": order.id, "response": response.text},
+        )
+        raise RuntimeError("Resposta invalida do Mercado Pago.")
 
-    if not preference_id or not checkout_url:
-        raise RuntimeError("Preferencia criada sem dados de checkout.")
+    if response.status_code not in {200, 201}:
+        logger.error(
+            "mp_preference_error",
+            extra={"order_id": order.id, "response": response_payload},
+        )
+        raise RuntimeError("Falha ao criar preferencia no Mercado Pago.")
+
+    preference_id = response_payload.get("id")
+    checkout_url = (
+        response_payload.get("sandbox_init_point")
+        if is_sandbox
+        else response_payload.get("init_point")
+    )
+
+    if not checkout_url:
+        raise RuntimeError("Mercado Pago nao retornou URL de checkout.")
+    if not preference_id:
+        raise RuntimeError("Mercado Pago nao retornou preference_id.")
 
     return str(preference_id), str(checkout_url)
 
 
 def create_checkout(
     order: Order,
-    restaurant: Restaurant,
+    restaurant: Restaurant | None = None,
     notification_url: str | None = None,
     back_urls: dict | None = None,
 ) -> Tuple[str, str]:
@@ -129,10 +168,38 @@ def create_checkout(
     )
 
 
+def check_payment_status(payment_id: str) -> dict:
+    access_token = _get_access_token()
+    try:
+        response = requests.get(
+            MP_PAYMENT_URL.format(payment_id=payment_id),
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=10,
+        )
+        response.raise_for_status()
+    except requests.RequestException:
+        logger.exception("mp_request_failure")
+        raise
+
+    payload = response.json()
+    if not isinstance(payload, dict):
+        raise RuntimeError("Resposta invalida do Mercado Pago.")
+    return payload
+
+
 def get_payment(payment_id: str, access_token: str) -> dict:
-    sdk = mercadopago.SDK(access_token)
-    result = sdk.payment().get(payment_id)
-    payment = result.get("response") if isinstance(result, dict) else None
-    if not payment:
+    try:
+        response = requests.get(
+            MP_PAYMENT_URL.format(payment_id=payment_id),
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=10,
+        )
+        response.raise_for_status()
+    except requests.RequestException:
+        logger.exception("mp_request_failure")
         raise RuntimeError("Falha ao consultar pagamento no Mercado Pago.")
-    return payment
+
+    payload = response.json()
+    if not isinstance(payload, dict):
+        raise RuntimeError("Falha ao consultar pagamento no Mercado Pago.")
+    return payload
