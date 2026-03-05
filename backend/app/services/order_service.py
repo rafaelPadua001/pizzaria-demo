@@ -4,9 +4,11 @@ import logging
 import os
 
 import requests
+from urllib.parse import quote
 
 from ..database import SessionLocal
 from ..models import Order
+
 OPERATIONAL_STATUSES = (
     "pending",
     "preparing",
@@ -14,7 +16,6 @@ OPERATIONAL_STATUSES = (
     "completed",
     "cancelled",
 )
-
 
 logger = logging.getLogger("order.service")
 
@@ -30,7 +31,6 @@ def _assistant_notify_url() -> str:
 def _send_assistant_notification(session_id: str, message: str) -> None:
     assistant_url = _assistant_notify_url()
     if not assistant_url:
-        print("ASSISTANT_NOTIFY_URL nao configurada")
         return
 
     payload = {"session_id": session_id, "message": message}
@@ -41,26 +41,44 @@ def _send_assistant_notification(session_id: str, message: str) -> None:
         return
 
     if response.status_code != 200:
-        print(
-            f"Erro ao notificar assistant (status={response.status_code}): {response.text}"
+        logger.error(
+            "Erro ao notificar assistant (status=%s): %s",
+            response.status_code,
+            response.text,
         )
-    else:
-        print("Notificacao enviada com sucesso.")
 
 
 def notify_order_status_change(order: Order) -> None:
     if not order.session_id:
-        print(f"Pedido {order.id} sem session_id. Notificacao nao enviada.")
         return
 
     status_raw = getattr(order, "order_status", None) or ""
     status_value = str(status_raw).upper()
-    message = f"🍕 Pedido #{order.id}\nStatus atualizado: {status_value}"
+    message = f"Pedido #{order.id}\\nStatus atualizado: {status_value}"
     _send_assistant_notification(order.session_id, message)
 
 
-def update_order_status(order_id: int, new_status: str) -> Order:
-    normalized = _normalize_status(new_status)
+def generate_whatsapp_link(phone: str, status: str) -> str:
+    # Remove tudo que não for número
+    phone_digits = "".join(ch for ch in str(phone) if ch.isdigit())
+
+    if not phone_digits:
+        raise ValueError("Customer phone is invalid.")
+
+    # Adiciona código do país 55 se não estiver presente
+    if not phone_digits.startswith("55"):
+        phone_digits = "55" + phone_digits
+
+    # Cria a mensagem codificada
+    message = f"Olá! Seu pedido foi atualizado para: {status}"
+    message_encoded = quote(message)
+
+    # Retorna o link pronto para WhatsApp
+    return f"https://wa.me/{phone_digits}?text={message_encoded}"
+
+
+def update_order_status(order_id: int, new_status: str) -> dict:
+    normalized = _normalize_status(new_status or "")
     if not normalized:
         raise ValueError("Status invalido.")
     if normalized not in OPERATIONAL_STATUSES:
@@ -70,12 +88,18 @@ def update_order_status(order_id: int, new_status: str) -> Order:
         order = db.query(Order).filter(Order.id == order_id).first()
         if not order:
             raise LookupError("Order not found.")
-
-        if order.order_status == normalized:
-            return order
+        if not order.customer_phone or not str(order.customer_phone).strip():
+            raise ValueError("Customer phone is required.")
 
         order.order_status = normalized
         db.commit()
         db.refresh(order)
-        notify_order_status_change(order)
-        return order
+
+        whatsapp_link = generate_whatsapp_link(order.customer_phone, normalized)
+
+        return {
+            "order_id": order.id,
+            "order_status": order.order_status,
+            "customer_phone": order.customer_phone,
+            "whatsapp_link": whatsapp_link,
+        }

@@ -360,36 +360,46 @@
     });
   };
 
-  const updatedOrderStatus = async (orderId, status) => {
-    try {
-      const token = getToken();
+ const updatedOrderStatus = async (orderId, status) => {
+  try {
+    const token = getToken();
 
-      if (!token) {
-        alert("Usuário não autenticado. Faça login novamente.");
-        return;
-      }
-
-      const response = await fetch(`/orders/${orderId}/order-status`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify({ order_status: status }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error(errorData);
-        throw new Error("Erro ao atualizar status");
-      }
-
-      console.log(`Pedido ${orderId} atualizado para ${status}`);
-    } catch (e) {
-      alert("Erro ao atualizar status do pedido");
-      console.error(e);
+    if (!token) {
+      alert("Usuário não autenticado. Faça login novamente.");
+      return;
     }
-  };
+
+    const response = await fetch(`/orders/${orderId}/order-status`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify({ order_status: status }),
+    });
+    console.log(response);
+    // Lê o JSON **uma única vez**
+    const data = await response.json().catch(() => ({}));
+    console.log(data);
+    if (!response.ok) {
+      console.error(data);
+      throw new Error("Erro ao atualizar status");
+    }
+
+    console.log(`Pedido ${orderId} atualizado para ${status}`);
+    console.log(data);
+
+    if (data?.whatsapp_link) {
+      window.open(data.whatsapp_link, "_blank");
+    } else {
+      console.warn("WhatsApp link não disponível");
+    }
+    
+  } catch (e) {
+    alert("Erro ao atualizar status do pedido");
+    console.error(e);
+  }
+};
 
   const renderPageSections = () => {
     pageSectionsList.innerHTML = "";
@@ -1015,3 +1025,5 @@
 
   bootstrap();
 })();
+
+
