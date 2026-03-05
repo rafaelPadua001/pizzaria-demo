@@ -130,15 +130,15 @@ def update_order_status_admin(
     return order
 
 
-@router.patch("/orders/{order_id}/order-status", response_model=OrderResponse)
+@router.patch("/orders/{order_id}/order-status")
 def update_order_operational_status(
     order_id: int,
     payload: OrderOperationalStatusUpdate,
     db: Session = Depends(get_db),
     _admin=Depends(get_current_admin),
-) -> Order:
+) -> dict:
     try:
-        update_order_status(order_id, payload.order_status)
+        return update_order_status(order_id, payload.order_status)
     except LookupError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
@@ -147,13 +147,3 @@ def update_order_operational_status(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
         ) from exc
-
-    order = (
-        db.query(Order)
-        .options(selectinload(Order.items))
-        .filter(Order.id == order_id)
-        .first()
-    )
-    if not order:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
-    return order
