@@ -34,6 +34,7 @@ class Order(Base):
     total_amount: Mapped[float] = mapped_column(Float, nullable=False)
     delivery_fee: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     payment_status: Mapped[str] = mapped_column(String(30), default="pending", nullable=False)
+    order_status: Mapped[str] = mapped_column(String(30), default="pending", nullable=False)
     mercadopago_preference_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     mercadopago_payment_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     status: Mapped[str] = mapped_column(

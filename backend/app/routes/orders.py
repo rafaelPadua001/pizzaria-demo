@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from ..database import get_db
 from ..models import Order, OrderItem
-from ..schemas import OrderCreate, OrderResponse, OrderStatusUpdate
+from ..schemas import OrderCreate, OrderResponse, OrderStatusUpdate, OrderOperationalStatusUpdate
 from ..services.order_service import update_order_status
 from .admin import get_current_admin
 
@@ -65,7 +65,12 @@ def list_orders(
     db: Session = Depends(get_db),
     _admin=Depends(get_current_admin),
 ) -> list[Order]:
-    return db.query(Order).order_by(Order.created_at.desc()).all()
+    return (
+        db.query(Order)
+        .options(selectinload(Order.items))
+        .order_by(Order.created_at.desc())
+        .all()
+    )
 
 
 @router.get("/orders/{order_id}", response_model=OrderResponse)
@@ -74,7 +79,12 @@ def get_order(
     db: Session = Depends(get_db),
     _admin=Depends(get_current_admin),
 ) -> Order:
-    order = db.query(Order).filter(Order.id == order_id).first()
+    order = (
+        db.query(Order)
+        .options(selectinload(Order.items))
+        .filter(Order.id == order_id)
+        .first()
+    )
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
     return order
@@ -115,6 +125,35 @@ def update_order_status_admin(
         ) from exc
 
     order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+    return order
+
+
+@router.patch("/orders/{order_id}/order-status", response_model=OrderResponse)
+def update_order_operational_status(
+    order_id: int,
+    payload: OrderOperationalStatusUpdate,
+    db: Session = Depends(get_db),
+    _admin=Depends(get_current_admin),
+) -> Order:
+    try:
+        update_order_status(order_id, payload.order_status)
+    except LookupError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
+
+    order = (
+        db.query(Order)
+        .options(selectinload(Order.items))
+        .filter(Order.id == order_id)
+        .first()
+    )
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
     return order

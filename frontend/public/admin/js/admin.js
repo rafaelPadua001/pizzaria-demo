@@ -1,6 +1,7 @@
 (() => {
-  const API_BASE = "http://127.0.0.1:8000";
+  const API_BASE = "";
   const TOKEN_KEY = "pizzariaAdminToken";
+  const LEGACY_TOKEN_KEY = "access_token";
 
   const loginView = document.getElementById("loginView");
   const appView = document.getElementById("appView");
@@ -9,6 +10,12 @@
   const loginError = document.getElementById("loginError");
 
   const nav = document.getElementById("adminNav");
+
+  const accessToken = localStorage.getItem(TOKEN_KEY) || localStorage.getItem(LEGACY_TOKEN_KEY);
+  if (!accessToken && !loginView) {
+    window.location.href = "/login.html";
+    return;
+  }
 
   const categoryForm = document.getElementById("categoryForm");
   const categoryError = document.getElementById("categoryError");
@@ -39,6 +46,13 @@
   const pagesList = document.getElementById("pagesList");
   const pagesError = document.getElementById("pagesError");
   const refreshPagesBtn = document.getElementById("refreshPages");
+  const order_status_options = [
+    "pending",
+    "preparing",
+    "delivering",
+    "completed",
+    "cancelled",
+  ];
 
   let categories = [];
   let products = [];
@@ -68,9 +82,12 @@
     el.hidden = false;
   };
 
-  const getToken = () => localStorage.getItem(TOKEN_KEY);
+  const getToken = () => localStorage.getItem(TOKEN_KEY) || localStorage.getItem(LEGACY_TOKEN_KEY);
   const setToken = (token) => localStorage.setItem(TOKEN_KEY, token);
-  const clearToken = () => localStorage.removeItem(TOKEN_KEY);
+  const clearToken = () => {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
+  };
 
   const authFetch = (url, options = {}) => {
     const token = getToken();
@@ -292,6 +309,33 @@
       header.appendChild(title);
       header.appendChild(meta);
 
+      const statusWrapper = document.createElement("div");
+      statusWrapper.className = "order-status";
+
+      const statusLabel = document.createElement("label");
+      statusLabel.className = "Status:";
+
+      const statusSelect = document.createElement("select");
+      statusSelect.value = order.order_status || "pending";
+
+      order_status_options.forEach((status) => {
+        const option = document.createElement("option");
+        option.value = status;
+        option.textContent = status.toUpperCase();
+        if (status === order.order_status) {
+          option.selected = true;
+        }
+        statusSelect.appendChild(option);
+      });
+
+      statusSelect.addEventListener("change", async function () {
+        const newStatus = this.value;
+        await updatedOrderStatus(order.id, newStatus);
+      });
+
+      statusWrapper.appendChild(statusLabel);
+      statusWrapper.appendChild(statusSelect);
+
       const items = document.createElement("div");
       items.className = "order-items";
 
@@ -304,9 +348,41 @@
       });
 
       card.appendChild(header);
+      card.appendChild(statusWrapper);
       card.appendChild(items);
       ordersList.appendChild(card);
     });
+  };
+
+  const updatedOrderStatus = async (orderId, status) => {
+    try {
+      const token = getToken();
+
+      if (!token) {
+        alert("Usuário não autenticado. Faça login novamente.");
+        return;
+      }
+
+      const response = await fetch(`/orders/${orderId}/order-status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ order_status: status }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error(errorData);
+        throw new Error("Erro ao atualizar status");
+      }
+
+      console.log(`Pedido ${orderId} atualizado para ${status}`);
+    } catch (e) {
+      alert("Erro ao atualizar status do pedido");
+      console.error(e);
+    }
   };
 
   const renderPageSections = () => {
@@ -721,7 +797,13 @@
       }
 
       const data = await response.json();
-      setToken(data.access_token);
+      if (data.access_token) {
+        setToken(data.access_token);
+        localStorage.setItem(LEGACY_TOKEN_KEY, data.access_token);
+        console.log("Token salvo:", localStorage.getItem(LEGACY_TOKEN_KEY));
+      } else {
+        console.error("Token não recebido no login");
+      }
       showApp();
       setActiveView("page-sections");
       await Promise.all([

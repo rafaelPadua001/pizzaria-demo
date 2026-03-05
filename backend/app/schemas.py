@@ -170,10 +170,13 @@ class OrderResponse(BaseModel):
     delivery_fee: float | None = None
     status: str
     payment_status: str | None = None
+    order_status: str | None = None
     mercadopago_preference_id: str | None = None
     mercadopago_payment_id: str | None = None
     created_at: datetime
     items: list[OrderItemResponse]
+
+    model_config = {"from_attributes": True}
 
 
 class CheckoutResponse(BaseModel):
@@ -195,6 +198,10 @@ class PaymentResponse(BaseModel):
 
 class OrderStatusUpdate(BaseModel):
     status: str
+
+
+class OrderOperationalStatusUpdate(BaseModel):
+    order_status: str
 
 
 class PageSectionBase(BaseModel):
