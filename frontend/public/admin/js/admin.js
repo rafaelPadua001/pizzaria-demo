@@ -336,6 +336,12 @@
       statusWrapper.appendChild(statusLabel);
       statusWrapper.appendChild(statusSelect);
 
+
+      const paymentChip = document.createElement("div");
+      paymentChip.className = `payment-chip payment-${order.status}`;
+      paymentChip.textContent = `Pagamento: ${order.status}`;
+
+      statusWrapper.appendChild(paymentChip);
       const items = document.createElement("div");
       items.className = "order-items";
 
