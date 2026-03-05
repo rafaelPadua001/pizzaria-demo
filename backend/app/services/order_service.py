@@ -7,7 +7,13 @@ import requests
 
 from ..database import SessionLocal
 from ..models import Order
-from ..models.order import ORDER_STATUSES
+OPERATIONAL_STATUSES = (
+    "pending",
+    "preparing",
+    "delivering",
+    "completed",
+    "cancelled",
+)
 
 
 logger = logging.getLogger("order.service")
@@ -47,7 +53,7 @@ def notify_order_status_change(order: Order) -> None:
         print(f"Pedido {order.id} sem session_id. Notificacao nao enviada.")
         return
 
-    status_raw = getattr(order, "order_status", None) or order.status or ""
+    status_raw = getattr(order, "order_status", None) or ""
     status_value = str(status_raw).upper()
     message = f"🍕 Pedido #{order.id}\nStatus atualizado: {status_value}"
     _send_assistant_notification(order.session_id, message)
@@ -57,7 +63,7 @@ def update_order_status(order_id: int, new_status: str) -> Order:
     normalized = _normalize_status(new_status)
     if not normalized:
         raise ValueError("Status invalido.")
-    if normalized not in ORDER_STATUSES:
+    if normalized not in OPERATIONAL_STATUSES:
         raise ValueError(f"Status invalido: {normalized}.")
 
     with SessionLocal() as db:
@@ -65,10 +71,10 @@ def update_order_status(order_id: int, new_status: str) -> Order:
         if not order:
             raise LookupError("Order not found.")
 
-        if order.status == normalized:
+        if order.order_status == normalized:
             return order
 
-        order.status = normalized
+        order.order_status = normalized
         db.commit()
         db.refresh(order)
         notify_order_status_change(order)

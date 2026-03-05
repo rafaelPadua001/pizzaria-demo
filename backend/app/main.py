@@ -43,7 +43,11 @@ app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -121,9 +125,11 @@ def startup_check():
         )
         connection.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS restaurant_id INTEGER"))
         connection.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_status VARCHAR(30) DEFAULT 'pending'"))
+        connection.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS order_status VARCHAR(30) DEFAULT 'pending'"))
         connection.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS mercadopago_preference_id VARCHAR(255)"))
         connection.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS mercadopago_payment_id VARCHAR(255)"))
         connection.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS status VARCHAR(30) DEFAULT 'pending'"))
+        connection.execute(text("ALTER TABLE orders ALTER COLUMN order_status SET DEFAULT 'pending'"))
 
         connection.execute(text("""
         DO $$
@@ -169,6 +175,47 @@ def startup_check():
             UPDATE orders
             SET total_amount = total
             WHERE total_amount IS NULL;
+          END IF;
+        END $$;
+        """))
+
+        connection.execute(text("""
+        DO $$
+        DECLARE
+          data_type text;
+          udt_name text;
+        BEGIN
+          SELECT c.data_type, c.udt_name INTO data_type, udt_name
+          FROM information_schema.columns c
+          WHERE c.table_name = 'orders' AND c.column_name = 'order_status';
+
+          IF data_type = 'USER-DEFINED' AND udt_name = 'order_status_enum' THEN
+            EXECUTE 'ALTER TABLE orders ALTER COLUMN order_status DROP DEFAULT';
+            EXECUTE 'ALTER TABLE orders ALTER COLUMN order_status TYPE VARCHAR(30) USING order_status::text';
+            EXECUTE 'DROP TYPE IF EXISTS order_status_enum';
+            EXECUTE 'ALTER TABLE orders ALTER COLUMN order_status SET DEFAULT ''pending''';
+          END IF;
+        END $$;
+        """))
+
+        connection.execute(text("""
+        DO $$
+        BEGIN
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'orders' AND column_name = 'order_status'
+          ) THEN
+            UPDATE orders
+            SET order_status = lower(order_status)
+            WHERE order_status IS NOT NULL;
+
+            UPDATE orders
+            SET order_status = 'pending'
+            WHERE order_status IS NULL
+              OR order_status = ''
+              OR order_status NOT IN (
+                'pending','preparing','delivering','completed','cancelled'
+              );
           END IF;
         END $$;
         """))

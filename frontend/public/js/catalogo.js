@@ -1,6 +1,5 @@
 (() => {
-  const origin = window.location.origin === "null" ? "" : window.location.origin;
-  const API_BASE = origin || "http://127.0.0.1:8000";
+  const API_BASE = "";
   const titleEl = document.getElementById("categoryTitle");
   const descEl = document.getElementById("categoryDescription");
   const gridEl = document.getElementById("productsGrid");

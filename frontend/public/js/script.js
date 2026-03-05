@@ -1,6 +1,6 @@
 // Carrega dados das secoes da pagina via API
 (() => {
-  const API_BASE = "http://127.0.0.1:8001";
+  const API_BASE = "";
 
   const setText = (id, value) => {
     const el = document.getElementById(id);
@@ -85,7 +85,7 @@
 
 async function loadCategories() {
   try {
-    const response = await fetch('http://127.0.0.1:8000/categories');
+    const response = await fetch('/categories');
     if (!response.ok) throw new Error('Erro API');
 
     const categories = await response.json();
@@ -566,9 +566,7 @@ window.addEventListener("storage", (event) => {
 /* ===== CHECKOUT ===== */
 const CHECKOUT_KEY = "checkout_data";
 
-const API_BASE = window.location.origin === "null"
-  ? "http://127.0.0.1:8000"
-  : window.location.origin;
+const API_BASE = "";
 const RESTAURANT_ENV_URL = "/js/restaurant.env";
 let restaurantEnvPromise = null;
 
