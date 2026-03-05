@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from .database import Base, engine, get_db
 from .models import Admin, Category, Product, Order, OrderItem, PageSection, Page, Restaurant  # noqa
-from .routes import admin, auth, categories, products, orders, admin_content, content, catalog, checkout, webhook, payments
+from .routes import admin, admins, auth, categories, products, orders, admin_content, content, catalog, checkout, webhook, payments, internal
 from .utils.time import get_current_time
 
 
@@ -46,6 +46,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:8000",
         "http://127.0.0.1:8000",
+        "null",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -58,6 +59,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(admin.router)
+app.include_router(admins.router)
 app.include_router(categories.router)
 app.include_router(products.router)
 app.include_router(orders.router)
@@ -67,6 +69,7 @@ app.include_router(catalog.router)
 app.include_router(checkout.router)
 app.include_router(webhook.router)
 app.include_router(payments.router)
+app.include_router(internal.router)
 
 @app.get("/admin")
 def serve_admin():
