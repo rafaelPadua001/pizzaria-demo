@@ -1,9 +1,11 @@
-@app.post("/admin/run-migrations")
-def run_migrations():
-    from alembic.config import Config
-    from alembic import command
+import os
+import subprocess
 
-    alembic_cfg = Config("alembic.ini")
-    command.upgrade(alembic_cfg, "head")
+print("Running database migrations...")
 
-    return {"status": "ok"}
+subprocess.run(
+    ["alembic", "upgrade", "head"],
+    check=True
+)
+
+print("Migrations finished.")
