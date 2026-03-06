@@ -268,6 +268,10 @@ async def mercadopago_webhook(
     except Exception:  # noqa: BLE001
         payload = {}
 
+    topic = _extract_topic(payload, request)
+    if topic != "payment":
+        return {"status": "ignored"}
+
     secret = os.getenv("MERCADOPAGO_WEBHOOK_SECRET", "")
     signature = request.headers.get("X-Signature") or request.headers.get("X-Webhook-Signature")
     if secret and signature:
@@ -278,11 +282,7 @@ async def mercadopago_webhook(
         logger.warning("Webhook recebido sem assinatura configurada.")
 
     payment_id = _extract_payment_id(payload, request)
-    topic = _extract_topic(payload, request)
-    merchant_order_id = None
-    if topic == "merchant_order":
-        merchant_order_id = _extract_merchant_order_id(payload, request)
     logger.info("Webhook Mercado Pago recebido: %s", _safe_log_payload(payload))
 
-    background_tasks.add_task(_process_payment, payment_id, payload, topic, merchant_order_id)
+    background_tasks.add_task(_process_payment, payment_id, payload, topic, None)
     return {"status": "ok"}
