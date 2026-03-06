@@ -23,6 +23,17 @@ logger = logging.getLogger("payments")
 
 router = APIRouter(tags=["Payments"])
 
+MP_STATUS_MAP = {
+    "approved": "paid",
+    "pending": "pending",
+    "in_process": "pending",
+    "rejected": "canceled",
+    "cancelled": "canceled",
+    "canceled": "canceled",
+    "charged_back": "canceled",
+    "refunded": "canceled",
+}
+
 
 def _get_base_url() -> str:
     return os.getenv("BASE_URL", "http://127.0.0.1:8000").rstrip("/")
@@ -145,21 +156,10 @@ def payment_status(payment_id: str, db: Session = Depends(get_db)):
             status_value = str(payment.get("status", "")).lower()
             db.commit()
 
-            mapped_payment_status = None
-            if status_value in {"approved", "authorized"}:
-                mapped_payment_status = "approved"
-            elif status_value in {"rejected", "charged_back"}:
-                mapped_payment_status = "rejected"
-            elif status_value in {"cancelled", "canceled"}:
-                mapped_payment_status = "cancelled"
-            elif status_value in {"refunded"}:
-                mapped_payment_status = "refunded"
-            elif status_value in {"pending", "in_process"}:
-                mapped_payment_status = "pending"
-            elif status_value:
-                mapped_payment_status = status_value
-
-            if mapped_payment_status:
+            mapped_payment_status = MP_STATUS_MAP.get(status_value)
+            if not mapped_payment_status and status_value:
+                logger.warning("Status do MercadoPago desconhecido: %s", status_value)
+            elif mapped_payment_status:
                 try:
                     update_payment_status(order.id, mapped_payment_status)
                 except Exception as exc:  # noqa: BLE001
@@ -170,7 +170,7 @@ def payment_status(payment_id: str, db: Session = Depends(get_db)):
                         exc_info=exc,
                     )
 
-            if mapped_payment_status == "approved":
+            if mapped_payment_status == "paid":
                 try:
                     update_order_status(order.id, "pending")
                 except Exception as exc:  # noqa: BLE001
@@ -179,7 +179,7 @@ def payment_status(payment_id: str, db: Session = Depends(get_db)):
                         order.id,
                         exc_info=exc,
                     )
-            elif mapped_payment_status in {"rejected", "cancelled", "refunded"}:
+            elif mapped_payment_status in {"canceled", "cancelled"}:
                 try:
                     update_order_status(order.id, "cancelled")
                 except Exception as exc:  # noqa: BLE001
