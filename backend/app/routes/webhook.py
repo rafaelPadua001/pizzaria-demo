@@ -19,6 +19,17 @@ logger = logging.getLogger("mercadopago.webhook")
 
 router = APIRouter(prefix="/webhook", tags=["Webhook"])
 
+MP_STATUS_MAP = {
+    "approved": "paid",
+    "pending": "pending",
+    "in_process": "pending",
+    "rejected": "canceled",
+    "cancelled": "canceled",
+    "canceled": "canceled",
+    "charged_back": "canceled",
+    "refunded": "canceled",
+}
+
 
 def _extract_payment_id(payload: dict[str, Any], request: Request) -> str | None:
     data = payload.get("data") if isinstance(payload, dict) else None
@@ -148,21 +159,10 @@ def _process_payment(payment_id: str | None, payload: dict[str, Any]) -> None:
 
         db.commit()
 
-        mapped_payment_status = None
-        if status_value in {"approved", "authorized"}:
-            mapped_payment_status = "approved"
-        elif status_value in {"rejected", "charged_back"}:
-            mapped_payment_status = "rejected"
-        elif status_value in {"cancelled", "canceled"}:
-            mapped_payment_status = "cancelled"
-        elif status_value in {"refunded"}:
-            mapped_payment_status = "refunded"
-        elif status_value in {"pending", "in_process"}:
-            mapped_payment_status = "pending"
-        elif status_value:
-            mapped_payment_status = status_value
-
-        if mapped_payment_status:
+        mapped_payment_status = MP_STATUS_MAP.get(status_value)
+        if not mapped_payment_status and status_value:
+            logger.warning("Status do MercadoPago desconhecido: %s", status_value)
+        elif mapped_payment_status:
             try:
                 update_payment_status(order.id, mapped_payment_status)
             except Exception as exc:  # noqa: BLE001
@@ -173,7 +173,7 @@ def _process_payment(payment_id: str | None, payload: dict[str, Any]) -> None:
                     exc_info=exc,
                 )
 
-        if mapped_payment_status == "approved":
+        if mapped_payment_status == "paid":
             try:
                 update_order_status(order.id, "pending")
             except Exception as exc:  # noqa: BLE001
@@ -182,7 +182,7 @@ def _process_payment(payment_id: str | None, payload: dict[str, Any]) -> None:
                     order.id,
                     exc_info=exc,
                 )
-        elif mapped_payment_status in {"rejected", "cancelled", "refunded"}:
+        elif mapped_payment_status in {"canceled", "cancelled"}:
             try:
                 update_order_status(order.id, "cancelled")
             except Exception as exc:  # noqa: BLE001

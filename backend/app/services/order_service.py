@@ -19,10 +19,9 @@ OPERATIONAL_STATUSES = (
 
 PAYMENT_STATUSES = (
     "pending",
-    "approved",
-    "rejected",
+    "paid",
+    "canceled",
     "cancelled",
-    "refunded",
 )
 
 logger = logging.getLogger("order.service")
