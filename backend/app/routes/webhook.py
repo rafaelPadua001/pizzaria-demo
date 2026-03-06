@@ -6,12 +6,12 @@ import logging
 import os
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from ..database import SessionLocal
 from ..models import Order, Restaurant
-from ..services.mercadopago_service import get_payment, get_merchant_order
+from ..services.mercadopago_service import get_payment
 from ..services.order_service import update_order_status, update_payment_status
 
 
@@ -55,19 +55,6 @@ def _extract_topic(payload: dict[str, Any], request: Request) -> str | None:
     return query.get("topic") or query.get("type")
 
 
-def _extract_merchant_order_id(payload: dict[str, Any], request: Request) -> str | None:
-    data = payload.get("data") if isinstance(payload, dict) else None
-    if isinstance(data, dict):
-        merchant_id = data.get("id")
-        if merchant_id:
-            return str(merchant_id)
-    merchant_id = payload.get("id") if isinstance(payload, dict) else None
-    if merchant_id:
-        return str(merchant_id)
-    query = request.query_params
-    return query.get("id") or query.get("data.id")
-
-
 def _safe_log_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(payload, dict):
         return {"payload": "invalid"}
@@ -103,39 +90,11 @@ def _get_tokens(db: Session, preferred: str | None = None) -> list[str]:
     return tokens
 
 
-def _resolve_payment_from_merchant_order(
-    db: Session,
-    merchant_order_id: str,
-    preferred_token: str | None,
-) -> str | None:
-    for token in _get_tokens(db, preferred=preferred_token):
-        if not token:
-            continue
-        try:
-            merchant_order = get_merchant_order(merchant_order_id, token)
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("Falha ao consultar merchant_order.", exc_info=exc)
-            continue
-
-        payments = merchant_order.get("payments") if isinstance(merchant_order, dict) else None
-        if not payments:
-            continue
-        for payment in payments:
-            if not isinstance(payment, dict):
-                continue
-            payment_id = payment.get("id") or payment.get("payment_id")
-            if payment_id:
-                return str(payment_id)
-    return None
-
-
 def _process_payment(
     payment_id: str | None,
     payload: dict[str, Any],
-    topic: str | None,
-    merchant_order_id: str | None,
 ) -> None:
-    if not payment_id and topic != "merchant_order":
+    if not payment_id:
         logger.warning("Webhook recebido sem payment_id.")
         return
 
@@ -165,17 +124,6 @@ def _process_payment(
                 )
                 if restaurant:
                     preferred_token = restaurant.mercadopago_access_token
-
-        if topic == "merchant_order" and merchant_order_id:
-            payment_id = _resolve_payment_from_merchant_order(
-                db, merchant_order_id, preferred_token
-            )
-            if not payment_id:
-                logger.warning(
-                    "merchant_order %s sem pagamentos associados.",
-                    merchant_order_id,
-                )
-                return
 
         payment = None
         for token in _get_tokens(db, preferred=preferred_token):
@@ -246,7 +194,7 @@ def _process_payment(
                     order.id,
                     exc_info=exc,
                 )
-        elif mapped_payment_status in {"canceled", "cancelled"}:
+        elif mapped_payment_status == "canceled":
             try:
                 update_order_status(order.id, "cancelled")
             except Exception as exc:  # noqa: BLE001
@@ -260,7 +208,6 @@ def _process_payment(
 @router.post("/mercadopago", status_code=status.HTTP_200_OK)
 async def mercadopago_webhook(
     request: Request,
-    background_tasks: BackgroundTasks,
 ) -> dict[str, str]:
     raw_body = await request.body()
     try:
@@ -284,5 +231,12 @@ async def mercadopago_webhook(
     payment_id = _extract_payment_id(payload, request)
     logger.info("Webhook Mercado Pago recebido: %s", _safe_log_payload(payload))
 
-    background_tasks.add_task(_process_payment, payment_id, payload, topic, None)
+    if not payment_id:
+        logger.warning("Webhook recebido sem payment_id.")
+        return {"status": "ignored"}
+
+    try:
+        _process_payment(payment_id, payload)
+    except Exception as exc:  # noqa: BLE001
+        logger.error("Erro ao processar webhook", exc_info=exc)
     return {"status": "ok"}
