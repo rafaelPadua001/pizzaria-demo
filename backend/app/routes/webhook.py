@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from ..database import SessionLocal
 from ..models import Order, Restaurant
 from ..services.mercadopago_service import get_payment
-from ..services.order_service import update_order_status
+from ..services.order_service import update_order_status, update_payment_status
 
 
 logger = logging.getLogger("mercadopago.webhook")
@@ -146,30 +146,49 @@ def _process_payment(payment_id: str | None, payload: dict[str, Any]) -> None:
         if preference_id:
             order.mercadopago_preference_id = str(preference_id)
 
-        new_status = None
-        if status_value in {"approved", "authorized"}:
-            order.payment_status = "approved"
-            new_status = "paid"
-        elif status_value in {"rejected", "cancelled", "refunded", "charged_back"}:
-            order.payment_status = "rejected"
-        elif status_value:
-            order.payment_status = status_value
-
         db.commit()
-        logger.info(
-            "Pedido %s atualizado para payment_status=%s.",
-            order.id,
-            order.payment_status,
-        )
 
-        if new_status:
+        mapped_payment_status = None
+        if status_value in {"approved", "authorized"}:
+            mapped_payment_status = "approved"
+        elif status_value in {"rejected", "charged_back"}:
+            mapped_payment_status = "rejected"
+        elif status_value in {"cancelled", "canceled"}:
+            mapped_payment_status = "cancelled"
+        elif status_value in {"refunded"}:
+            mapped_payment_status = "refunded"
+        elif status_value in {"pending", "in_process"}:
+            mapped_payment_status = "pending"
+        elif status_value:
+            mapped_payment_status = status_value
+
+        if mapped_payment_status:
             try:
-                update_order_status(order.id, new_status)
+                update_payment_status(order.id, mapped_payment_status)
             except Exception as exc:  # noqa: BLE001
                 logger.warning(
-                    "Falha ao atualizar status do pedido %s para %s.",
+                    "Falha ao atualizar payment_status do pedido %s para %s.",
                     order.id,
-                    new_status,
+                    mapped_payment_status,
+                    exc_info=exc,
+                )
+
+        if mapped_payment_status == "approved":
+            try:
+                update_order_status(order.id, "pending")
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "Falha ao atualizar order_status do pedido %s para pending.",
+                    order.id,
+                    exc_info=exc,
+                )
+        elif mapped_payment_status in {"rejected", "cancelled", "refunded"}:
+            try:
+                update_order_status(order.id, "cancelled")
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "Falha ao atualizar order_status do pedido %s para cancelled.",
+                    order.id,
                     exc_info=exc,
                 )
 

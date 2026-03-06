@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session, selectinload
 from ..database import get_db
 from ..models import Order, OrderItem
 from ..schemas import OrderCreate, OrderResponse, OrderStatusUpdate, OrderOperationalStatusUpdate
-from ..services.order_service import update_order_status
+from ..services.order_service import update_order_status, update_payment_status
 from .admin import get_current_admin
 
 
@@ -114,7 +114,7 @@ def update_order_status_admin(
     _admin=Depends(get_current_admin),
 ) -> Order:
     try:
-        update_order_status(order_id, payload.status)
+        update_payment_status(order_id, payload.status)
     except LookupError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)

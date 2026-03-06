@@ -16,7 +16,7 @@ from ..services.mercadopago_service import (
     create_preference,
     get_payment,
 )
-from ..services.order_service import update_order_status
+from ..services.order_service import update_order_status, update_payment_status
 
 
 logger = logging.getLogger("payments")
@@ -143,33 +143,57 @@ def payment_status(payment_id: str, db: Session = Depends(get_db)):
         if order:
             order.mercadopago_payment_id = str(payment_id)
             status_value = str(payment.get("status", "")).lower()
-            if status_value:
-                order.payment_status = status_value
             db.commit()
 
+            mapped_payment_status = None
             if status_value in {"approved", "authorized"}:
+                mapped_payment_status = "approved"
+            elif status_value in {"rejected", "charged_back"}:
+                mapped_payment_status = "rejected"
+            elif status_value in {"cancelled", "canceled"}:
+                mapped_payment_status = "cancelled"
+            elif status_value in {"refunded"}:
+                mapped_payment_status = "refunded"
+            elif status_value in {"pending", "in_process"}:
+                mapped_payment_status = "pending"
+            elif status_value:
+                mapped_payment_status = status_value
+
+            if mapped_payment_status:
                 try:
-                    update_order_status(order.id, "paid")
+                    update_payment_status(order.id, mapped_payment_status)
                 except Exception as exc:  # noqa: BLE001
                     logger.warning(
-                        "Falha ao atualizar status do pedido %s para paid.",
+                        "Falha ao atualizar payment_status do pedido %s para %s.",
+                        order.id,
+                        mapped_payment_status,
+                        exc_info=exc,
+                    )
+
+            if mapped_payment_status == "approved":
+                try:
+                    update_order_status(order.id, "pending")
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning(
+                        "Falha ao atualizar order_status do pedido %s para pending.",
                         order.id,
                         exc_info=exc,
                     )
-            elif status_value in {"rejected", "cancelled"}:
+            elif mapped_payment_status in {"rejected", "cancelled", "refunded"}:
                 try:
                     update_order_status(order.id, "cancelled")
                 except Exception as exc:  # noqa: BLE001
                     logger.warning(
-                        "Falha ao atualizar status do pedido %s para cancelled.",
+                        "Falha ao atualizar order_status do pedido %s para cancelled.",
                         order.id,
                         exc_info=exc,
                     )
+            db.refresh(order)
 
     if not order:
         return {"payment_status": "not_found"}
 
-    return {"payment_status": order.payment_status}
+    return {"payment_status": order.status}
 
 
 @router.get("/payment-status/{payment_id}")
