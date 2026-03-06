@@ -13,6 +13,7 @@ logger = logging.getLogger("mercadopago.service")
 
 MP_PREFERENCE_URL = "https://api.mercadopago.com/checkout/preferences"
 MP_PAYMENT_URL = "https://api.mercadopago.com/v1/payments/{payment_id}"
+MP_MERCHANT_ORDER_URL = "https://api.mercadopago.com/merchant_orders/{merchant_order_id}"
 
 
 def _get_access_token(restaurant: Restaurant | None = None) -> str:
@@ -202,4 +203,22 @@ def get_payment(payment_id: str, access_token: str) -> dict:
     payload = response.json()
     if not isinstance(payload, dict):
         raise RuntimeError("Falha ao consultar pagamento no Mercado Pago.")
+    return payload
+
+
+def get_merchant_order(merchant_order_id: str, access_token: str) -> dict:
+    try:
+        response = requests.get(
+            MP_MERCHANT_ORDER_URL.format(merchant_order_id=merchant_order_id),
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=10,
+        )
+        response.raise_for_status()
+    except requests.RequestException:
+        logger.exception("mp_request_failure")
+        raise RuntimeError("Falha ao consultar merchant_order no Mercado Pago.")
+
+    payload = response.json()
+    if not isinstance(payload, dict):
+        raise RuntimeError("Falha ao consultar merchant_order no Mercado Pago.")
     return payload
