@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from ..database import SessionLocal
 from ..models import Order, Restaurant
-from ..services.mercadopago_service import get_payment
+from ..services.mercadopago_service import get_payment, get_merchant_order
 from ..services.order_service import update_order_status, update_payment_status
 
 
@@ -44,6 +44,28 @@ def _extract_payment_id(payload: dict[str, Any], request: Request) -> str | None
 
     query = request.query_params
     return query.get("data.id") or query.get("id")
+
+
+def _extract_topic(payload: dict[str, Any], request: Request) -> str | None:
+    if isinstance(payload, dict):
+        topic = payload.get("topic") or payload.get("type")
+        if topic:
+            return str(topic)
+    query = request.query_params
+    return query.get("topic") or query.get("type")
+
+
+def _extract_merchant_order_id(payload: dict[str, Any], request: Request) -> str | None:
+    data = payload.get("data") if isinstance(payload, dict) else None
+    if isinstance(data, dict):
+        merchant_id = data.get("id")
+        if merchant_id:
+            return str(merchant_id)
+    merchant_id = payload.get("id") if isinstance(payload, dict) else None
+    if merchant_id:
+        return str(merchant_id)
+    query = request.query_params
+    return query.get("id") or query.get("data.id")
 
 
 def _safe_log_payload(payload: dict[str, Any]) -> dict[str, Any]:
@@ -81,8 +103,39 @@ def _get_tokens(db: Session, preferred: str | None = None) -> list[str]:
     return tokens
 
 
-def _process_payment(payment_id: str | None, payload: dict[str, Any]) -> None:
-    if not payment_id:
+def _resolve_payment_from_merchant_order(
+    db: Session,
+    merchant_order_id: str,
+    preferred_token: str | None,
+) -> str | None:
+    for token in _get_tokens(db, preferred=preferred_token):
+        if not token:
+            continue
+        try:
+            merchant_order = get_merchant_order(merchant_order_id, token)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Falha ao consultar merchant_order.", exc_info=exc)
+            continue
+
+        payments = merchant_order.get("payments") if isinstance(merchant_order, dict) else None
+        if not payments:
+            continue
+        for payment in payments:
+            if not isinstance(payment, dict):
+                continue
+            payment_id = payment.get("id") or payment.get("payment_id")
+            if payment_id:
+                return str(payment_id)
+    return None
+
+
+def _process_payment(
+    payment_id: str | None,
+    payload: dict[str, Any],
+    topic: str | None,
+    merchant_order_id: str | None,
+) -> None:
+    if not payment_id and topic != "merchant_order":
         logger.warning("Webhook recebido sem payment_id.")
         return
 
@@ -112,6 +165,17 @@ def _process_payment(payment_id: str | None, payload: dict[str, Any]) -> None:
                 )
                 if restaurant:
                     preferred_token = restaurant.mercadopago_access_token
+
+        if topic == "merchant_order" and merchant_order_id:
+            payment_id = _resolve_payment_from_merchant_order(
+                db, merchant_order_id, preferred_token
+            )
+            if not payment_id:
+                logger.warning(
+                    "merchant_order %s sem pagamentos associados.",
+                    merchant_order_id,
+                )
+                return
 
         payment = None
         for token in _get_tokens(db, preferred=preferred_token):
@@ -214,7 +278,11 @@ async def mercadopago_webhook(
         logger.warning("Webhook recebido sem assinatura configurada.")
 
     payment_id = _extract_payment_id(payload, request)
+    topic = _extract_topic(payload, request)
+    merchant_order_id = None
+    if topic == "merchant_order":
+        merchant_order_id = _extract_merchant_order_id(payload, request)
     logger.info("Webhook Mercado Pago recebido: %s", _safe_log_payload(payload))
 
-    background_tasks.add_task(_process_payment, payment_id, payload)
+    background_tasks.add_task(_process_payment, payment_id, payload, topic, merchant_order_id)
     return {"status": "ok"}
