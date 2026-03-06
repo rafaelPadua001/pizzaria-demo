@@ -172,11 +172,22 @@ def _process_payment(
         db.commit()
 
         mapped_payment_status = MP_STATUS_MAP.get(status_value)
+        logger.info(
+            "Pagamento %s status=%s mapped_status=%s",
+            payment_id,
+            status_value,
+            mapped_payment_status,
+        )
         if not mapped_payment_status and status_value:
             logger.warning("Status do MercadoPago desconhecido: %s", status_value)
         elif mapped_payment_status:
             try:
                 update_payment_status(order.id, mapped_payment_status)
+                logger.info(
+                    "Pedido %s payment_status atualizado para %s.",
+                    order.id,
+                    mapped_payment_status,
+                )
             except Exception as exc:  # noqa: BLE001
                 logger.warning(
                     "Falha ao atualizar payment_status do pedido %s para %s.",
@@ -188,6 +199,10 @@ def _process_payment(
         if mapped_payment_status == "paid":
             try:
                 update_order_status(order.id, "pending")
+                logger.info(
+                    "Pedido %s order_status atualizado para pending.",
+                    order.id,
+                )
             except Exception as exc:  # noqa: BLE001
                 logger.warning(
                     "Falha ao atualizar order_status do pedido %s para pending.",
@@ -197,6 +212,10 @@ def _process_payment(
         elif mapped_payment_status == "canceled":
             try:
                 update_order_status(order.id, "cancelled")
+                logger.info(
+                    "Pedido %s order_status atualizado para cancelled.",
+                    order.id,
+                )
             except Exception as exc:  # noqa: BLE001
                 logger.warning(
                     "Falha ao atualizar order_status do pedido %s para cancelled.",
