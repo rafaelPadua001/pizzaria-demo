@@ -17,6 +17,14 @@ OPERATIONAL_STATUSES = (
     "cancelled",
 )
 
+PAYMENT_STATUSES = (
+    "pending",
+    "approved",
+    "rejected",
+    "cancelled",
+    "refunded",
+)
+
 logger = logging.getLogger("order.service")
 
 
@@ -76,6 +84,26 @@ def generate_whatsapp_link(phone: str, status: str) -> str:
     # Retorna o link pronto para WhatsApp
     return f"https://wa.me/{phone_digits}?text={message_encoded}"
 
+def update_payment_status(order_id: int, payment_status: str) -> None:
+    normalized = _normalize_status(payment_status or "")
+    if not normalized:
+        raise ValueError("Payment status invalido.")
+    if normalized not in PAYMENT_STATUSES:
+        raise ValueError(f"Payment status invalido: {normalized}.")
+
+    with SessionLocal() as db:
+        order = db.query(Order).filter(Order.id == order_id).first()
+        if not order:
+            raise LookupError("Order not found.")
+
+        order.status = normalized
+        db.commit()
+        logger.info(
+            "Pedido %s atualizado para payment_status=%s.",
+            order.id,
+            normalized,
+        )
+
 
 def update_order_status(order_id: int, new_status: str) -> dict:
     normalized = _normalize_status(new_status or "")
@@ -94,6 +122,11 @@ def update_order_status(order_id: int, new_status: str) -> dict:
         order.order_status = normalized
         db.commit()
         db.refresh(order)
+        logger.info(
+            "Pedido %s atualizado para order_status=%s.",
+            order.id,
+            order.order_status,
+        )
 
         whatsapp_link = generate_whatsapp_link(order.customer_phone, normalized)
 
