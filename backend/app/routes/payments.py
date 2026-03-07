@@ -172,7 +172,7 @@ def payment_status(payment_id: str, db: Session = Depends(get_db)):
 
             if mapped_payment_status == "paid":
                 try:
-                    update_order_status(order.id, "confirmed")
+                    update_order_status(order.id, "pending")
                 except Exception as exc:  # noqa: BLE001
                     logger.warning(
                         "Falha ao atualizar order_status do pedido %s para pending.",
