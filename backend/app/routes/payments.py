@@ -172,7 +172,7 @@ def payment_status(payment_id: str, db: Session = Depends(get_db)):
 
             if mapped_payment_status == "paid":
                 try:
-                    update_order_status(order.id, "pending")
+                    update_order_status(order.id, "confirmed")
                 except Exception as exc:  # noqa: BLE001
                     logger.warning(
                         "Falha ao atualizar order_status do pedido %s para pending.",
@@ -194,23 +194,3 @@ def payment_status(payment_id: str, db: Session = Depends(get_db)):
         return {"payment_status": "not_found"}
 
     return {"payment_status": order.payment_status}
-
-
-@router.get("/payment-status/{payment_id}")
-def payment_status_api(payment_id: str, db: Session = Depends(get_db)):
-    return payment_status(payment_id=payment_id, db=db)
-
-#@router.get("/payment/success", response_class=HTMLResponse)
-#def payment_success() -> str:
-#    return "<h1>Pagamento aprovado</h1><p>sp>"
-#
-#
-#@router.get("/payment/failure", response_class=HTMLResponse)
-#def payment_failure() -> str:
-#    return "<h1>Pagamento nao aprovado</h1><p>Voce pode tentar novamente.</p>"
-#
-#
-#@router.get("/payment/pending", response_class=HTMLResponse)
-#def payment_pending() -> str:
-#    return "<h1>Pagamento pendente</h1><p>Estamos aguardando a confirmacao.</p>"
-#
