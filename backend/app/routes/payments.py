@@ -193,7 +193,7 @@ def payment_status(payment_id: str, db: Session = Depends(get_db)):
     if not order:
         return {"payment_status": "not_found"}
 
-    return {"payment_status": order.status}
+    return {"payment_status": order.payment_status}
 
 
 @router.get("/payment-status/{payment_id}")
