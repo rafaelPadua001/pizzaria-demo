@@ -84,6 +84,7 @@ def generate_whatsapp_link(phone: str, status: str) -> str:
     return f"https://wa.me/{phone_digits}?text={message_encoded}"
 
 def update_payment_status(order_id: int, payment_status: str) -> None:
+    print(payment_status)
     normalized = _normalize_status(payment_status or "")
     if not normalized:
         raise ValueError("Payment status invalido.")
@@ -102,6 +103,12 @@ def update_payment_status(order_id: int, payment_status: str) -> None:
             order.id,
             normalized,
         )
+    return {
+            "order_id": order.id,
+            "order_status": order.order_status,
+            "customer_phone": order.customer_phone,
+            #"whatsapp_link": whatsapp_link,
+        }
 
 
 def update_order_status(order_id: int, new_status: str) -> dict:
