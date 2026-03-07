@@ -105,7 +105,7 @@ def update_payment_status(order_id: int, payment_status: str) -> None:
         )
     return {
             "order_id": order.id,
-            "order_status": order.order_status,
+            "status": order.status,
             "customer_phone": order.customer_phone,
             #"whatsapp_link": whatsapp_link,
         }
