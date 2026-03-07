@@ -25,7 +25,7 @@ async function checkPayment() {
 
 function renderStatus(status) {
     const container = document.getElementById("payment-result");
-
+        console.log("STATUS RECEBIDO:", status);
     if (status === "approved" || status === "paid" || status === "confirmed") {
         container.innerHTML = `
             <h1 style="color: green;">Pagamento aprovado ✅</h1>
