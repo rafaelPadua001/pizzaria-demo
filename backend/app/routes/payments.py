@@ -172,7 +172,7 @@ def payment_status(payment_id: str, db: Session = Depends(get_db)):
 
             if mapped_payment_status == "paid":
                 try:
-                    update_payment_status(order.id, "pending")
+                    update_order_status(order.id, "pending")
                 except Exception as exc:  # noqa: BLE001
                     logger.warning(
                         "Falha ao atualizar order_status do pedido %s para pending.",
@@ -181,7 +181,7 @@ def payment_status(payment_id: str, db: Session = Depends(get_db)):
                     )
             elif mapped_payment_status in {"canceled", "cancelled"}:
                 try:
-                    update_payment_status(order.id, "cancelled")
+                    update_order_status(order.id, "cancelled")
                 except Exception as exc:  # noqa: BLE001
                     logger.warning(
                         "Falha ao atualizar order_status do pedido %s para cancelled.",
@@ -193,7 +193,7 @@ def payment_status(payment_id: str, db: Session = Depends(get_db)):
     if not order:
         return {"payment_status": "not_found"}
 
-    return {"payment_status": order.status}
+    return {"payment_status": order.payment_status}
 
 
 @router.get("/payment-status/{payment_id}")

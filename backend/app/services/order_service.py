@@ -103,13 +103,7 @@ def update_payment_status(order_id: int, payment_status: str) -> None:
             order.id,
             normalized,
         )
-    return {
-            "order_id": order.id,
-            "order_status": order.order_status,
-            "customer_phone": order.customer_phone,
-            #"whatsapp_link": whatsapp_link,
-        }
-
+  
 
 def update_order_status(order_id: int, new_status: str) -> dict:
     normalized = _normalize_status(new_status or "")
