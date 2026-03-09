@@ -28,6 +28,7 @@ const history = [];
 const messagesEl = document.getElementById("pcw-messages");
 const inputEl = document.getElementById("pcw-input");
 const sendBtn = document.getElementById("pcw-send");
+const seenNotifications = new Set();
 const closeBtn = document.getElementById("pcw-close");
 const weekday = [
     "sunday",
@@ -224,13 +225,20 @@ async function pollNotifications() {
         if (!response.ok) return;
         const data = await response.json();
 
-        if (data && Array.isArray(data.messages)) {
-            data.messages.forEach((item) => {
+        if (data && Array.isArray(data.notifications)) {
+            data.notifications.forEach((item) => {
                 if (item && item.message) {
                     addMessage("assistant", item.message);
                 }
             });
         }
+
+        data.notifications.forEach((item) => {
+            if (item && item.message && !seenNotifications.has(item.created_at)) {
+                seenNotifications.add(item.created_at);
+                addMessage("assistant", item.message);
+            }
+        });
     } catch (err) {
         console.error("Erro ao buscar notificacoes:", err);
     }
@@ -283,14 +291,14 @@ async function sendMessage() {
 
         // Se vier link do WhatsApp, mostra o botao
         if (data && data.whatsapp_link) {
-           addWhatsAppButton(data.whatsapp_link);
+            addWhatsAppButton(data.whatsapp_link);
         }
-        if(data && data.buttons){
+        if (data && data.buttons) {
             addAssistantButtons(data.buttons);
         }
         await pollNotifications();
-        
-        
+
+
     } catch (err) {
         console.error("Erro no chat:", err);
         addMessage("assistant", "Erro ao conectar com o chat. Tente novamente em instantes.");
