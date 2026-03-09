@@ -219,6 +219,7 @@ function scrollToBottom() {
 }
 
 async function pollNotifications() {
+
     const sessionId = state?.session_id;
 
     if (typeof sessionId !== "string" || !sessionId.trim()) {
@@ -232,25 +233,26 @@ async function pollNotifications() {
     }
 
     isPollingNotifications = true;
+
     const url = `${NOTIFICATIONS_ENDPOINT}/${encodeURIComponent(sessionId.trim())}`;
-    console.debug("[pollNotifications] request", { sessionId, url });
 
     try {
+
         const response = await fetch(url, {
             method: "GET",
-            headers: { Accept: "application/json" },
+            headers: { Accept: "application/json" }
         });
 
         if (!response.ok) {
             console.warn("[pollNotifications] non-OK response", {
                 sessionId,
-                status: response.status,
-                statusText: response.statusText,
+                status: response.status
             });
             return;
         }
 
         let data;
+
         try {
             data = await response.json();
         } catch (parseErr) {
@@ -258,32 +260,56 @@ async function pollNotifications() {
             return;
         }
 
-        const queue = Array.isArray(data?.notifications)
+        if (!data || typeof data !== "object") {
+            console.warn("[pollNotifications] unexpected payload", { sessionId, data });
+            return;
+        }
+
+        const queue = Array.isArray(data.notifications)
             ? data.notifications
-            : Array.isArray(data?.messages)
+            : Array.isArray(data.messages)
                 ? data.messages
                 : [];
+
         if (!queue.length) return;
 
+        console.debug("[pollNotifications] queue size", queue.length);
+
         for (const item of queue) {
+
             const message = typeof item === "string"
                 ? item.trim()
                 : typeof item?.message === "string"
                     ? item.message.trim()
                     : "";
-            const createdAt = typeof item?.created_at === "string" ? item.created_at : "";
+
+            const createdAt = typeof item?.created_at === "string"
+                ? item.created_at
+                : "";
+
             if (!message) continue;
 
             const dedupeKey = createdAt || `msg:${message}`;
+
             if (seenNotifications.has(dedupeKey)) continue;
 
+            if (seenNotifications.size > 200) {
+                seenNotifications.clear();
+            }
+
             seenNotifications.add(dedupeKey);
+
             addMessage("assistant", message);
         }
+
     } catch (err) {
+
         console.error("[pollNotifications] request failed", { sessionId, err });
+
     } finally {
+
         isPollingNotifications = false;
+
     }
 }
 
