@@ -234,7 +234,7 @@ async function pollNotifications() {
 
     isPollingNotifications = true;
 
-    const url = `${NOTIFICATIONS_ENDPOINT}?session_id=${encodeURIComponent(sessionId.trim())}`;
+    const url = `${NOTIFICATIONS_ENDPOINT}/${encodeURIComponent(sessionId.trim())}`;
 
     try {
 
