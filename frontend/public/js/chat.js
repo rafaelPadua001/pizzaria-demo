@@ -29,6 +29,7 @@ const messagesEl = document.getElementById("pcw-messages");
 const inputEl = document.getElementById("pcw-input");
 const sendBtn = document.getElementById("pcw-send");
 const seenNotifications = new Set();
+let isPollingNotifications = false;
 const closeBtn = document.getElementById("pcw-close");
 const weekday = [
     "sunday",
@@ -218,29 +219,71 @@ function scrollToBottom() {
 }
 
 async function pollNotifications() {
-    if (!state || !state.session_id) return;
+    const sessionId = state?.session_id;
+
+    if (typeof sessionId !== "string" || !sessionId.trim()) {
+        console.debug("[pollNotifications] skipped: missing session_id", { sessionId });
+        return;
+    }
+
+    if (isPollingNotifications) {
+        console.debug("[pollNotifications] skipped: request already in flight", { sessionId });
+        return;
+    }
+
+    isPollingNotifications = true;
+    const url = `${NOTIFICATIONS_ENDPOINT}/${encodeURIComponent(sessionId.trim())}`;
+    console.debug("[pollNotifications] request", { sessionId, url });
 
     try {
-        const response = await fetch(`${NOTIFICATIONS_ENDPOINT}/${state.session_id}`);
-        if (!response.ok) return;
-        const data = await response.json();
+        const response = await fetch(url, {
+            method: "GET",
+            headers: { Accept: "application/json" },
+        });
 
-        if (data && Array.isArray(data.notifications)) {
-            data.notifications.forEach((item) => {
-                if (item && item.message) {
-                    addMessage("assistant", item.message);
-                }
+        if (!response.ok) {
+            console.warn("[pollNotifications] non-OK response", {
+                sessionId,
+                status: response.status,
+                statusText: response.statusText,
             });
+            return;
         }
 
-        data.notifications.forEach((item) => {
-            if (item && item.message && !seenNotifications.has(item.created_at)) {
-                seenNotifications.add(item.created_at);
-                addMessage("assistant", item.message);
-            }
-        });
+        let data;
+        try {
+            data = await response.json();
+        } catch (parseErr) {
+            console.error("[pollNotifications] invalid JSON", { sessionId, parseErr });
+            return;
+        }
+
+        const queue = Array.isArray(data?.notifications)
+            ? data.notifications
+            : Array.isArray(data?.messages)
+                ? data.messages
+                : [];
+        if (!queue.length) return;
+
+        for (const item of queue) {
+            const message = typeof item === "string"
+                ? item.trim()
+                : typeof item?.message === "string"
+                    ? item.message.trim()
+                    : "";
+            const createdAt = typeof item?.created_at === "string" ? item.created_at : "";
+            if (!message) continue;
+
+            const dedupeKey = createdAt || `msg:${message}`;
+            if (seenNotifications.has(dedupeKey)) continue;
+
+            seenNotifications.add(dedupeKey);
+            addMessage("assistant", message);
+        }
     } catch (err) {
-        console.error("Erro ao buscar notificacoes:", err);
+        console.error("[pollNotifications] request failed", { sessionId, err });
+    } finally {
+        isPollingNotifications = false;
     }
 }
 
