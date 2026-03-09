@@ -195,8 +195,7 @@ async def mercadopago_webhook(request: Request) -> dict[str, str]:
         order.mercadopago_payment_id = str(payment_id)
         if preference_id:
             order.mercadopago_preference_id = str(preference_id)
-        if order_status:
-            order.order_status = order_status
+        order.status = payment_status
 
         try:
             db.commit()
