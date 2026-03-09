@@ -6,6 +6,7 @@ import logging
 import os
 from typing import Any
 
+import httpx
 from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
@@ -28,6 +29,39 @@ MP_STATUS_MAP: dict[str, tuple[str, str | None]] = {
     "charged_back": ("canceled", "canceled"),
     "refunded": ("canceled", "canceled"),
 }
+
+
+async def notify_assistant(order_id: int, session_id: str | None, status_value: str) -> None:
+    session_id_value = str(session_id or "").strip()
+    if not session_id_value:
+        logger.warning(
+            "Pedido %s sem session_id. Notificacao do assistant ignorada.",
+            order_id,
+        )
+        return
+
+    notify_url = os.getenv(
+        "ASSISTANT_NOTIFY_URL",
+        "https://assistant-restaurant.onrender.com/assistant/notify",
+    )
+    payload = {
+        "type": "payment_update",
+        "order_id": order_id,
+        "status": status_value,
+        "session_id": session_id_value,
+        "message": f"Pedido #{order_id} status atualizado: {str(status_value).upper()}",
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.post(notify_url, json=payload)
+            response.raise_for_status()
+    except Exception as exc:  # noqa: BLE001
+        logger.error(
+            "Falha ao enviar notificacao do pedido %s para assistant.",
+            order_id,
+            exc_info=exc,
+        )
 
 
 def _extract_payment_id(payload: dict[str, Any], request: Request) -> str | None:
@@ -205,6 +239,7 @@ async def mercadopago_webhook(request: Request) -> dict[str, str]:
                 payment_status,
                 order_status,
             )
+            await notify_assistant(order.id, order.session_id, payment_status)
         except Exception as exc:  # noqa: BLE001
             db.rollback()
             logger.error("Erro ao salvar pedido %s", order.id, exc_info=exc)

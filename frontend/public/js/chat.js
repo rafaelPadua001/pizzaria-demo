@@ -234,7 +234,7 @@ async function pollNotifications() {
 
     isPollingNotifications = true;
 
-    const url = `${NOTIFICATIONS_ENDPOINT}/${encodeURIComponent(sessionId.trim())}`;
+    const url = `${NOTIFICATIONS_ENDPOINT}?session_id=${encodeURIComponent(sessionId.trim())}`;
 
     try {
 
@@ -265,17 +265,17 @@ async function pollNotifications() {
             return;
         }
 
-        const queue = Array.isArray(data.notifications)
+        const notifications = Array.isArray(data?.notifications)
             ? data.notifications
-            : Array.isArray(data.messages)
+            : Array.isArray(data?.messages)
                 ? data.messages
                 : [];
 
-        if (!queue.length) return;
+        if (!notifications.length) return;
 
-        console.debug("[pollNotifications] queue size", queue.length);
+        console.debug("[pollNotifications] queue size", notifications.length);
 
-        for (const item of queue) {
+        for (const item of notifications) {
 
             const message = typeof item === "string"
                 ? item.trim()
