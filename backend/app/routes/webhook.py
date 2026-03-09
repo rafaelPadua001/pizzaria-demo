@@ -156,11 +156,11 @@ async def mercadopago_webhook(request: Request) -> dict[str, str]:
                 logger.warning("Falha ao consultar pagamento com token.", exc_info=exc)
 
         if not payment:
-            logger.error("Nao foi possivel obter dados do pagamento %s.", payment_id)
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="Falha ao consultar pagamento.",
+            logger.warning(
+                "Pagamento %s nao encontrado no MercadoPago. Ignorando webhook.",
+                payment_id,
             )
+            return {"status": "ignored"}
 
         status_value = str(payment.get("status", "")).lower()
         mapped = MP_STATUS_MAP.get(status_value)
