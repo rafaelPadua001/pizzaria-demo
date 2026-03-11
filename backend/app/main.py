@@ -12,7 +12,7 @@ from .middleware.tenant_resolver import TenantResolverMiddleware
 
 from .database import Base, engine, get_db
 from .models import Admin, Category, Product, Order, OrderItem, PageSection, Page, Restaurant  # noqa
-from .routes import admin, admins, auth, categories, products, orders, admin_content, content, catalog, checkout, webhook, payments, internal, tenant_config, tenant_pages, saas
+from .routes import admin, admins, auth, categories, products, orders, admin_content, content, catalog, checkout, webhook, payments, internal, tenant_config, tenant_pages, saas, admin_notifications, ws_admin_notifications
 from .utils.time import get_current_time
 
 
@@ -79,9 +79,11 @@ app.include_router(internal.router)
 app.include_router(tenant_pages.router)
 app.include_router(tenant_config.router)
 app.include_router(saas.router)
+app.include_router(admin_notifications.router)
+app.include_router(admin_notifications.router, prefix="/{restaurant_slug}")
+app.include_router(ws_admin_notifications.router)
 
 for tenant_router in (
-    admin.router,
     categories.router,
     products.router,
     orders.router,

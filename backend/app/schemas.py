@@ -49,6 +49,23 @@ class SaaSRestaurantResponse(BaseModel):
     admin_username: str
 
 
+class NotificationResponse(BaseModel):
+    id: int
+    restaurant_id: int
+    type: str
+    title: str
+    message: str
+    order_id: int | None = None
+    is_read: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class NotificationUnreadCountResponse(BaseModel):
+    count: int
+
+
 class CategoryBase(BaseModel):
     name: str
     title: str | None = None

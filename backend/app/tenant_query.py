@@ -47,4 +47,5 @@ def _add_tenant_criteria(execute_state):
 
 @event.listens_for(RestaurantMixin, "before_insert", propagate=True)
 def _set_restaurant_id(mapper, connection, target):
-    target.restaurant_id = get_current_restaurant_id()
+    if getattr(target, "restaurant_id", None) is None:
+        target.restaurant_id = get_current_restaurant_id()

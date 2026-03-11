@@ -22,6 +22,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 from . import tenant_query  # noqa: E402,F401
+from .services import notification_service  # noqa: E402,F401
 
 
 def get_db():

@@ -1,11 +1,16 @@
 (() => {
-  const API_BASE = "";
+  const pathParts = window.location.pathname.split("/").filter(Boolean);
+  const tenantPrefix =
+    pathParts.length >= 2 && pathParts[1] === "admin" ? `/${pathParts[0]}` : "";
+  const API_BASE = tenantPrefix;
   const TOKEN_KEY = "pizzariaAdminToken";
   const LEGACY_TOKEN_KEY = "access_token";
 
   const loginView = document.getElementById("loginView");
   const appView = document.getElementById("appView");
   const authStatus = document.getElementById("authStatus");
+  const notificationBell = document.getElementById("notificationBell");
+  const notificationCount = document.getElementById("notificationCount");
   const loginForm = document.getElementById("loginForm");
   const loginError = document.getElementById("loginError");
 
@@ -58,6 +63,17 @@
   let products = [];
   let pageSections = [];
   let pages = [];
+  let currentOrders = [];
+  let notifications = [];
+  let unreadOrderIds = new Set();
+  let notificationByOrderId = new Map();
+  let notificationSound = null;
+  let websocket = null;
+  const restaurantId =
+    window.RESTAURANT_ID ||
+    document.body.dataset.restaurantId ||
+    1;
+  const tenantSlug = tenantPrefix ? tenantPrefix.slice(1) : "";
 
   const setStatus = (text) => {
     authStatus.querySelector("span:last-child").textContent = text;
@@ -80,6 +96,95 @@
     }
     el.textContent = message;
     el.hidden = false;
+  };
+
+  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+  const wsUrl = `${protocol}://${window.location.host}/ws/admin/${restaurantId}`;
+
+  const connectSocket = () => {
+    const socket = new WebSocket(wsUrl);
+    websocket = socket;
+
+    socket.onopen = () => {
+      console.log("WebSocket connected");
+    };
+
+    socket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log("Notification received:", data);
+        if (data.event === "new_order") {
+          handleNewOrderEvent();
+        }
+      } catch (err) {
+        console.warn("Invalid websocket message:", err);
+      }
+    };
+
+    socket.onerror = (err) => {
+      console.warn("WebSocket error:", err);
+    };
+
+    socket.onclose = () => {
+      console.log("WebSocket disconnected, reconnecting...");
+      setTimeout(connectSocket, 5000);
+    };
+  };
+
+  const updateNotificationBadge = (count) => {
+    if (!notificationCount) return;
+    if (count > 0) {
+      notificationCount.textContent = String(count);
+      notificationCount.hidden = false;
+    } else {
+      notificationCount.textContent = "0";
+      notificationCount.hidden = true;
+    }
+  };
+
+  const ensureNotificationSound = () => {
+    if (notificationSound) return notificationSound;
+    notificationSound = new Audio("/assets/sounds/new-order.mp3");
+    notificationSound.loop = true;
+    return notificationSound;
+  };
+
+  const playNotificationSound = () => {
+    const sound = ensureNotificationSound();
+    sound
+      .play()
+      .catch((error) => console.warn("Falha ao tocar som de pedido.", error));
+  };
+
+  const stopNotificationSound = () => {
+    if (!notificationSound) return;
+    notificationSound.pause();
+    notificationSound.currentTime = 0;
+  };
+
+  const syncNotificationState = () => {
+    unreadOrderIds = new Set();
+    notificationByOrderId = new Map();
+    let unreadCount = 0;
+
+    notifications.forEach((notification) => {
+      if (notification.is_read) return;
+      unreadCount += 1;
+      if (notification.order_id) {
+        unreadOrderIds.add(notification.order_id);
+        notificationByOrderId.set(notification.order_id, notification.id);
+      }
+    });
+
+    updateNotificationBadge(unreadCount);
+    if (unreadCount > 0) {
+      playNotificationSound();
+    } else {
+      stopNotificationSound();
+    }
+    if (currentOrders.length) {
+      renderOrders(currentOrders);
+    }
   };
 
   const getToken = () => localStorage.getItem(TOKEN_KEY) || localStorage.getItem(LEGACY_TOKEN_KEY);
@@ -114,6 +219,11 @@
 
   const doLogout = () => {
     clearToken();
+    if (websocket) {
+      websocket.close();
+      websocket = null;
+    }
+    stopNotificationSound();
     hideElement(appView);
     showElement(loginView);
     setStatus("Autenticacao requerida");
@@ -291,6 +401,10 @@
     orders.forEach((order) => {
       const card = document.createElement("div");
       card.className = "order-card";
+      const isNew = unreadOrderIds.has(order.id);
+      if (isNew) {
+        card.classList.add("new-order-highlight");
+      }
 
       const header = document.createElement("div");
       header.className = "order-header";
@@ -308,6 +422,12 @@
 
       header.appendChild(title);
       header.appendChild(meta);
+      if (isNew) {
+        const badge = document.createElement("span");
+        badge.className = "new-order-badge";
+        badge.textContent = "NOVO";
+        header.appendChild(badge);
+      }
 
       const statusWrapper = document.createElement("div");
       statusWrapper.className = "order-status";
@@ -356,6 +476,28 @@
       card.appendChild(header);
       card.appendChild(statusWrapper);
       card.appendChild(items);
+
+      if (isNew) {
+        const actions = document.createElement("div");
+        actions.className = "order-actions";
+        const acceptBtn = document.createElement("button");
+        acceptBtn.type = "button";
+        acceptBtn.className = "btn-primary";
+        acceptBtn.textContent = "Aceitar pedido";
+        acceptBtn.addEventListener("click", (event) => {
+          event.stopPropagation();
+          acknowledgeOrder(order.id);
+        });
+        actions.appendChild(acceptBtn);
+        card.appendChild(actions);
+
+        card.addEventListener("click", (event) => {
+          if (event.target.closest("button") || event.target.closest("select")) {
+            return;
+          }
+          acknowledgeOrder(order.id);
+        });
+      }
       ordersList.appendChild(card);
     });
   };
@@ -629,7 +771,81 @@
     const response = await authFetch("/orders");
     handleAuthError(response);
     const data = await response.json();
-    renderOrders(data);
+    currentOrders = Array.isArray(data) ? data : [];
+    renderOrders(currentOrders);
+  };
+
+  const resolveRestaurantId = async () => {
+    if (!tenantSlug) return 1;
+    try {
+      const response = await fetch("/restaurants");
+      if (!response.ok) {
+        return 1;
+      }
+      const data = await response.json();
+      const match = Array.isArray(data)
+        ? data.find((restaurant) => restaurant.slug === tenantSlug)
+        : null;
+      return match?.id || 1;
+    } catch (error) {
+      console.warn("Falha ao resolver restaurant_id.", error);
+      return 1;
+    }
+  };
+
+  const loadNotifications = async () => {
+    try {
+      const response = await authFetch("/admin/notifications");
+      handleAuthError(response);
+      if (!response.ok) {
+        throw new Error("Erro ao carregar notificacoes.");
+      }
+      notifications = await response.json();
+    } catch (error) {
+      console.warn("Falha ao carregar notificacoes.", error);
+      notifications = [];
+    }
+    syncNotificationState();
+  };
+
+  const acknowledgeOrder = async (orderId) => {
+    const notificationId = notificationByOrderId.get(orderId);
+    if (!notificationId) {
+      await loadNotifications();
+      return;
+    }
+    try {
+      const response = await authFetch(`/admin/notifications/${notificationId}/read`, {
+        method: "POST",
+      });
+      handleAuthError(response);
+      if (!response.ok) {
+        throw new Error("Erro ao confirmar notificacao.");
+      }
+      const updated = await response.json().catch(() => null);
+      notifications = notifications.map((item) => {
+        if (item.id === notificationId) {
+          return { ...item, ...(updated || {}), is_read: true };
+        }
+        return item;
+      });
+      syncNotificationState();
+    } catch (error) {
+      console.warn(error);
+      await loadNotifications();
+    }
+  };
+
+  const handleNewOrderEvent = async () => {
+    await Promise.all([loadOrders(), loadNotifications()]);
+  };
+
+  const initWebSocket = () => {
+    try {
+      connectSocket();
+    } catch (error) {
+      console.warn("WebSocket initialization failed:", error);
+    }
   };
 
   const loadPageSections = async () => {
@@ -829,6 +1045,8 @@
         loadOrders(),
         loadPages(),
       ]);
+      await loadNotifications();
+      await initWebSocket();
     } catch (error) {
       setAlert(loginError, error.message || "Erro no login.");
     }
@@ -985,6 +1203,9 @@
   refreshProductsBtn.addEventListener("click", () => loadProducts());
   refreshOrdersBtn.addEventListener("click", () => loadOrders());
   refreshPagesBtn.addEventListener("click", () => loadPages());
+  if (notificationBell) {
+    notificationBell.addEventListener("click", () => loadNotifications());
+  }
 
   nav.addEventListener("click", (event) => {
     const target = event.target.closest(".nav-link");
@@ -1014,6 +1235,8 @@
           loadOrders(),
           loadPages(),
         ]);
+        await loadNotifications();
+        await initWebSocket();
         return;
       } catch (error) {
         doLogout();

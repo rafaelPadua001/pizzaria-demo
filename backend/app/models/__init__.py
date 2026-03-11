@@ -10,6 +10,7 @@ from ..database import Base
 from .order import Order, OrderItem
 from .mixins import RestaurantMixin
 from .restaurant import Restaurant
+from .notification import Notification
 
 
 class Admin(Base):
