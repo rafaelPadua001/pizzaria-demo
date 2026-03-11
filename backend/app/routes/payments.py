@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import Order, Restaurant
+from ..config.tenant import RESTAURANT_ID
 from ..schemas import PaymentCreate, PaymentResponse
 from ..services.mercadopago_service import (
     check_payment_status,
@@ -57,14 +58,15 @@ def create_payment(
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pedido nao encontrado.")
 
-    if not order.restaurant_id:
+    restaurant_id = order.restaurant_id or RESTAURANT_ID
+    if not restaurant_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Pedido sem restaurante.")
 
-    restaurant = (
-        db.query(Restaurant).filter(Restaurant.id == order.restaurant_id).first()
-    )
+    restaurant = (db.query(Restaurant).filter(Restaurant.id == restaurant_id).first())
     if not restaurant:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Restaurante nao encontrado.")
+    if not order.restaurant_id:
+        order.restaurant_id = restaurant_id
 
     base_url = _get_base_url()
     back_urls = {
@@ -113,11 +115,9 @@ def payment_status(payment_id: str, db: Session = Depends(get_db)):
         tokens.append(env_token)
 
     if not tokens:
-        tokens = [
-            restaurant.mercadopago_access_token
-            for restaurant in db.query(Restaurant).all()
-            if restaurant.mercadopago_access_token
-        ]
+        restaurant = db.query(Restaurant).filter(Restaurant.id == RESTAURANT_ID).first()
+        if restaurant and restaurant.mercadopago_access_token:
+            tokens.append(restaurant.mercadopago_access_token)
 
     payment = None
     try:
@@ -194,3 +194,5 @@ def payment_status(payment_id: str, db: Session = Depends(get_db)):
         return {"payment_status": "not_found"}
 
     return {"payment_status": order.status}
+
+

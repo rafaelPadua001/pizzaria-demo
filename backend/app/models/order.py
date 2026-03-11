@@ -6,6 +6,7 @@ from sqlalchemy import DateTime, Enum, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
+from .mixins import RestaurantMixin
 
 
 ORDER_STATUSES = (
@@ -21,13 +22,10 @@ ORDER_STATUSES = (
 )
 
 
-class Order(Base):
+class Order(RestaurantMixin, Base):
     __tablename__ = "orders"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    restaurant_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("restaurants.id"), nullable=True, index=True
-    )
     session_id: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
     customer_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     customer_phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
@@ -52,7 +50,7 @@ class Order(Base):
     restaurant: Mapped["Restaurant"] = relationship("Restaurant")
 
 
-class OrderItem(Base):
+class OrderItem(RestaurantMixin, Base):
     __tablename__ = "order_items"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -67,3 +65,4 @@ class OrderItem(Base):
     unit_price: Mapped[float] = mapped_column(Float, nullable=False)
 
     order: Mapped[Order] = relationship("Order", back_populates="items")
+

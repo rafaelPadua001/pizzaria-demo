@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import Order, OrderItem, Restaurant
+from ..config.tenant import RESTAURANT_ID
 from ..schemas import CheckoutRequest, CheckoutResponse, OrderCreatedResponse
 from ..services.mercadopago_service import create_preference
 
@@ -37,7 +38,7 @@ def create_order_checkout(
     _=Depends(require_api_key),
 ) -> CheckoutResponse:
     restaurant = (
-        db.query(Restaurant).filter(Restaurant.slug == payload.restaurant_slug).first()
+        db.query(Restaurant).filter(Restaurant.slug == payload.restaurant_slug, Restaurant.id == RESTAURANT_ID).first()
     )
     if not restaurant:
         raise HTTPException(
@@ -121,7 +122,7 @@ def create_order_precheckout(
     _=Depends(require_api_key),
 ) -> OrderCreatedResponse:
     restaurant = (
-        db.query(Restaurant).filter(Restaurant.slug == payload.restaurant_slug).first()
+        db.query(Restaurant).filter(Restaurant.slug == payload.restaurant_slug, Restaurant.id == RESTAURANT_ID).first()
     )
     if not restaurant:
         raise HTTPException(
@@ -189,7 +190,8 @@ def create_checkout_for_order(
     if not order.items:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Items required")
 
-    restaurant = db.query(Restaurant).filter(Restaurant.id == order.restaurant_id).first()
+    restaurant_id = order.restaurant_id or RESTAURANT_ID
+    restaurant = db.query(Restaurant).filter(Restaurant.id == restaurant_id).first()
     if not restaurant:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Restaurante nao encontrado."
@@ -225,3 +227,5 @@ def create_checkout_for_order(
     db.refresh(order)
 
     return CheckoutResponse(order_id=order.id, checkout_url=checkout_url)
+
+

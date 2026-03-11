@@ -21,6 +21,8 @@ engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
+from . import tenant_query  # noqa: E402,F401
+
 
 def get_db():
     db = SessionLocal()
@@ -28,3 +30,5 @@ def get_db():
         yield db
     finally:
         db.close()
+
+

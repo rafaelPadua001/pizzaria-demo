@@ -7,6 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
 from .order import Order, OrderItem
+from .mixins import RestaurantMixin
 from .restaurant import Restaurant
 
 
@@ -18,7 +19,7 @@ class Admin(Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
 
 
-class Category(Base):
+class Category(RestaurantMixin, Base):
     __tablename__ = "categories"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -42,7 +43,7 @@ class Category(Base):
     )
 
 
-class Product(Base):
+class Product(RestaurantMixin, Base):
     __tablename__ = "products"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -90,3 +91,4 @@ class Page(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
     )
+
