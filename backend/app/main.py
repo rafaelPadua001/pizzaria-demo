@@ -8,13 +8,17 @@ from fastapi.responses import FileResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from .middleware.tenant_resolver import TenantResolverMiddleware
+
 from .database import Base, engine, get_db
 from .models import Admin, Category, Product, Order, OrderItem, PageSection, Page, Restaurant  # noqa
-from .routes import admin, admins, auth, categories, products, orders, admin_content, content, catalog, checkout, webhook, payments, internal
+from .routes import admin, admins, auth, categories, products, orders, admin_content, content, catalog, checkout, webhook, payments, internal, tenant_config, tenant_pages, saas
 from .utils.time import get_current_time
 
 
 app = FastAPI()
+
+app.add_middleware(TenantResolverMiddleware)
 
 # ===============================
 # PATHS
@@ -72,9 +76,32 @@ app.include_router(checkout.router)
 app.include_router(webhook.router)
 app.include_router(payments.router)
 app.include_router(internal.router)
+app.include_router(tenant_pages.router)
+app.include_router(tenant_config.router)
+app.include_router(saas.router)
+
+for tenant_router in (
+    admin.router,
+    categories.router,
+    products.router,
+    orders.router,
+    admin_content.router,
+    content.router,
+    catalog.router,
+    checkout.router,
+    webhook.router,
+    payments.router,
+    tenant_pages.router,
+    tenant_config.router,
+):
+    app.include_router(tenant_router, prefix="/{restaurant_slug}")
 
 @app.get("/admin")
 def serve_admin():
+    return FileResponse(PUBLIC_DIR / "admin" / "admin.html")
+
+@app.get("/{restaurant_slug}/admin")
+def serve_admin_tenant(restaurant_slug: str):
     return FileResponse(PUBLIC_DIR / "admin" / "admin.html")
 
 @app.get("/health")
@@ -385,6 +412,106 @@ def startup_check():
           END IF;
         END $$;
         """))
+
+        # SaaS restaurant metadata
+        connection.execute(text("ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS slug VARCHAR(100)"))
+        connection.execute(text("ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS logo_url VARCHAR(255)"))
+        connection.execute(text("ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS primary_color VARCHAR(40)"))
+        connection.execute(text("ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS whatsapp_number VARCHAR(30)"))
+        connection.execute(text("ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS email VARCHAR(150)"))
+        connection.execute(text("ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS address VARCHAR(255)"))
+        connection.execute(text("ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS city VARCHAR(120)"))
+        connection.execute(text("ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS state VARCHAR(60)"))
+        connection.execute(text("ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS mercadopago_access_token VARCHAR(255)"))
+        connection.execute(text("ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS mercadopago_public_key VARCHAR(255)"))
+        connection.execute(text("ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS assistant_enabled BOOLEAN DEFAULT TRUE"))
+        connection.execute(text("ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP"))
+
+        connection.execute(text("""
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint WHERE conname = 'restaurants_slug_key'
+          ) THEN
+            IF (
+              SELECT COUNT(*) FROM restaurants WHERE slug IS NOT NULL
+            ) = (
+              SELECT COUNT(DISTINCT slug) FROM restaurants WHERE slug IS NOT NULL
+            ) THEN
+              ALTER TABLE restaurants ADD CONSTRAINT restaurants_slug_key UNIQUE (slug);
+            END IF;
+          END IF;
+        END $$;
+        """))
+
+        # Admin role/tenant linkage
+        connection.execute(text("ALTER TABLE admins ADD COLUMN IF NOT EXISTS role VARCHAR(50)"))
+        connection.execute(text("ALTER TABLE admins ADD COLUMN IF NOT EXISTS restaurant_id INTEGER"))
+
+        connection.execute(text("""
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'admins_restaurant_id_fkey'
+          ) THEN
+            ALTER TABLE admins
+            ADD CONSTRAINT admins_restaurant_id_fkey
+            FOREIGN KEY (restaurant_id)
+            REFERENCES restaurants(id)
+            ON DELETE SET NULL;
+          END IF;
+        END $$;
+        """))
+
+        # SaaS tables
+        connection.execute(text("""
+        CREATE TABLE IF NOT EXISTS roles (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(50) UNIQUE NOT NULL,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+        """))
+
+        connection.execute(text("""
+        CREATE TABLE IF NOT EXISTS users (
+          id SERIAL PRIMARY KEY,
+          email VARCHAR(150) UNIQUE NOT NULL,
+          password_hash VARCHAR(255) NOT NULL,
+          role VARCHAR(50) NOT NULL,
+          restaurant_id INTEGER,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+        """))
+
+        connection.execute(text("""
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'users_restaurant_id_fkey'
+          ) THEN
+            ALTER TABLE users
+            ADD CONSTRAINT users_restaurant_id_fkey
+            FOREIGN KEY (restaurant_id)
+            REFERENCES restaurants(id)
+            ON DELETE SET NULL;
+          END IF;
+        END $$;
+        """))
+
+        connection.execute(text("CREATE INDEX IF NOT EXISTS users_restaurant_id_idx ON users (restaurant_id)"))
+
+        # Performance indexes
+        connection.execute(text("""
+        CREATE INDEX IF NOT EXISTS orders_restaurant_created_at_idx
+        ON orders (restaurant_id, created_at)
+        """))
+
+        connection.execute(text("""
+        CREATE INDEX IF NOT EXISTS products_restaurant_category_idx
+        ON products (restaurant_id, category_id)
+        """))
     # Teste conexão
     with engine.connect() as connection:
         connection.execute(text("SELECT 1"))
@@ -394,6 +521,11 @@ def startup_check():
 # ===============================
 
 app.mount("/", StaticFiles(directory=PUBLIC_DIR, html=True), name="frontend")
+
+
+
+
+
 
 
 

@@ -6,6 +6,7 @@ from ..database import get_db
 from ..models import Admin
 from ..schemas import AdminResponse
 from ..services.auth import decode_access_token
+from ..services.tenant_context import get_current_restaurant_id
 
 
 router = APIRouter()
@@ -38,6 +39,14 @@ def get_current_admin(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuario nao encontrado",
         )
+
+    if admin.role == "restaurant_admin" and admin.restaurant_id:
+        current_restaurant_id = get_current_restaurant_id()
+        if admin.restaurant_id != current_restaurant_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Acesso negado para este restaurante",
+            )
     return admin
 
 

@@ -10,14 +10,14 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import Order, Restaurant
-from ..config.tenant import RESTAURANT_ID
 from ..schemas import PaymentCreate, PaymentResponse
-from ..services.mercadopago_service import (
+from ..services.order_service import update_order_status, update_payment_status
+from ..services.payment_service import (
     check_payment_status,
     create_preference,
     get_payment,
 )
-from ..services.order_service import update_order_status, update_payment_status
+from ..services.tenant_context import get_current_restaurant, get_current_restaurant_id
 
 
 logger = logging.getLogger("payments")
@@ -40,6 +40,17 @@ def _get_base_url() -> str:
     return os.getenv("BASE_URL", "http://127.0.0.1:8000").rstrip("/")
 
 
+def _build_notification_url(restaurant: Restaurant | None) -> str:
+    notification_url = os.getenv("MERCADOPAGO_NOTIFICATION_URL")
+    if notification_url:
+        return notification_url
+
+    base_url = _get_base_url()
+    if restaurant and restaurant.slug:
+        return f"{base_url}/{restaurant.slug}/webhook/mercadopago"
+    return f"{base_url}/webhook/mercadopago"
+
+
 def _require_api_key(x_api_key: str | None = Header(default=None, alias="X-API-KEY")) -> None:
     expected = os.getenv("INTERNAL_API_KEY", "")
     if not expected:
@@ -58,15 +69,24 @@ def create_payment(
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pedido nao encontrado.")
 
-    restaurant_id = order.restaurant_id or RESTAURANT_ID
-    if not restaurant_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Pedido sem restaurante.")
-
-    restaurant = (db.query(Restaurant).filter(Restaurant.id == restaurant_id).first())
+    restaurant = get_current_restaurant(db)
     if not restaurant:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Restaurante nao encontrado.")
+        restaurant_id = order.restaurant_id or get_current_restaurant_id()
+        if not restaurant_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Pedido sem restaurante.",
+            )
+        restaurant = db.query(Restaurant).filter(Restaurant.id == restaurant_id).first()
+
+    if not restaurant:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Restaurante nao encontrado.",
+        )
+
     if not order.restaurant_id:
-        order.restaurant_id = restaurant_id
+        order.restaurant_id = restaurant.id
 
     base_url = _get_base_url()
     back_urls = {
@@ -74,10 +94,7 @@ def create_payment(
         "failure": f"{base_url}/payment.html",
         "pending": f"{base_url}/payment.html",
     }
-    notification_url = os.getenv(
-        "MERCADOPAGO_NOTIFICATION_URL",
-        f"{base_url}/webhook/mercadopago",
-    )
+    notification_url = _build_notification_url(restaurant)
 
     try:
         preference_id, init_point = create_preference(
@@ -103,25 +120,26 @@ def create_payment(
         init_point=init_point,
     )
 
+
 @router.get("/payment-status/{payment_id}")
 def payment_status(payment_id: str, db: Session = Depends(get_db)):
     order = db.query(Order).filter(
         Order.mercadopago_payment_id == payment_id
     ).first()
 
-    tokens: list[str] = []
-    env_token = os.getenv("MERCADOPAGO_ACCESS_TOKEN", "")
-    if env_token:
-        tokens.append(env_token)
+    current_restaurant = get_current_restaurant(db)
 
-    if not tokens:
-        restaurant = db.query(Restaurant).filter(Restaurant.id == RESTAURANT_ID).first()
-        if restaurant and restaurant.mercadopago_access_token:
-            tokens.append(restaurant.mercadopago_access_token)
+    tokens: list[str] = []
+    if current_restaurant and current_restaurant.mercadopago_access_token:
+        tokens.append(current_restaurant.mercadopago_access_token)
+
+    env_token = os.getenv("MERCADOPAGO_ACCESS_TOKEN", "")
+    if env_token and env_token not in tokens:
+        tokens.append(env_token)
 
     payment = None
     try:
-        payment = check_payment_status(payment_id)
+        payment = check_payment_status(payment_id, restaurant=current_restaurant)
     except Exception as exc:  # noqa: BLE001
         logger.warning("Falha ao consultar pagamento %s.", payment_id, exc_info=exc)
 
@@ -194,5 +212,3 @@ def payment_status(payment_id: str, db: Session = Depends(get_db)):
         return {"payment_status": "not_found"}
 
     return {"payment_status": order.status}
-
-

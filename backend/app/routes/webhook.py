@@ -12,8 +12,8 @@ from sqlalchemy.orm import Session
 
 from ..database import SessionLocal
 from ..models import Order, Restaurant
-from ..config.tenant import RESTAURANT_ID
-from ..services.mercadopago_service import get_payment
+from ..services.payment_service import get_payment
+from ..services.tenant_context import get_current_restaurant
 
 
 logger = logging.getLogger("mercadopago.webhook")
@@ -110,14 +110,13 @@ def _is_valid_signature(raw_body: bytes, signature: str, secret: str) -> bool:
 def _get_tokens(db: Session) -> list[str]:
     tokens: list[str] = []
 
-    env_token = os.getenv("MERCADOPAGO_ACCESS_TOKEN", "")
-    if env_token:
-        tokens.append(env_token)
+    current_restaurant = get_current_restaurant(db)
+    if current_restaurant and current_restaurant.mercadopago_access_token:
+        tokens.append(current_restaurant.mercadopago_access_token)
 
-    if not tokens:
-        restaurant = db.query(Restaurant).filter(Restaurant.id == RESTAURANT_ID).first()
-        if restaurant and restaurant.mercadopago_access_token:
-            tokens.append(restaurant.mercadopago_access_token)
+    env_token = os.getenv("MERCADOPAGO_ACCESS_TOKEN", "")
+    if env_token and env_token not in tokens:
+        tokens.append(env_token)
 
     return tokens
 
@@ -248,5 +247,3 @@ async def mercadopago_webhook(request: Request) -> dict[str, str]:
             ) from exc
 
     return {"status": "ok"}
-
-

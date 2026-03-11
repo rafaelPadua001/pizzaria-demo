@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field
 
 
 class AdminLoginRequest(BaseModel):
@@ -18,6 +18,35 @@ class AdminResponse(BaseModel):
     username: str
 
     model_config = {"from_attributes": True}
+
+
+class RestaurantConfigResponse(BaseModel):
+    name: str
+    logo: str | None = None
+    primary_color: str | None = None
+    whatsapp: str | None = None
+
+
+class SaaSRestaurantCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=150)
+    slug: str = Field(min_length=2, max_length=100)
+    admin_email: EmailStr
+    admin_password: str = Field(min_length=6, max_length=128)
+    logo_url: str | None = None
+    primary_color: str | None = None
+    whatsapp_number: str | None = None
+    email: EmailStr | None = None
+    address: str | None = None
+    city: str | None = None
+    state: str | None = None
+    mercadopago_access_token: str | None = None
+    mercadopago_public_key: str | None = None
+
+
+class SaaSRestaurantResponse(BaseModel):
+    restaurant_id: int
+    slug: str
+    admin_username: str
 
 
 class CategoryBase(BaseModel):

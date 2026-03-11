@@ -5,12 +5,14 @@ from sqlalchemy.orm import Session, with_loader_criteria
 
 from .config.tenant import RESTAURANT_ID
 from .models.mixins import RestaurantMixin
+from .services.tenant_context import get_current_restaurant_id
 
 
 def _tenant_clause(cls):
-    if RESTAURANT_ID == 1:
-        return or_(cls.restaurant_id == RESTAURANT_ID, cls.restaurant_id.is_(None))
-    return cls.restaurant_id == RESTAURANT_ID
+    tenant_id = get_current_restaurant_id()
+    if RESTAURANT_ID == 1 and tenant_id == RESTAURANT_ID:
+        return or_(cls.restaurant_id == tenant_id, cls.restaurant_id.is_(None))
+    return cls.restaurant_id == tenant_id
 
 
 def _apply_dml_tenant(statement):
@@ -18,10 +20,11 @@ def _apply_dml_tenant(statement):
     if table is None or "restaurant_id" not in table.c:
         return statement
 
-    if RESTAURANT_ID == 1:
-        condition = or_(table.c.restaurant_id == RESTAURANT_ID, table.c.restaurant_id.is_(None))
+    tenant_id = get_current_restaurant_id()
+    if RESTAURANT_ID == 1 and tenant_id == RESTAURANT_ID:
+        condition = or_(table.c.restaurant_id == tenant_id, table.c.restaurant_id.is_(None))
     else:
-        condition = table.c.restaurant_id == RESTAURANT_ID
+        condition = table.c.restaurant_id == tenant_id
 
     return statement.where(condition)
 
@@ -44,4 +47,4 @@ def _add_tenant_criteria(execute_state):
 
 @event.listens_for(RestaurantMixin, "before_insert", propagate=True)
 def _set_restaurant_id(mapper, connection, target):
-    target.restaurant_id = RESTAURANT_ID
+    target.restaurant_id = get_current_restaurant_id()

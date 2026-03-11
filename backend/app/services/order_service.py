@@ -59,6 +59,10 @@ def notify_order_status_change(order: Order) -> None:
     if not order.session_id:
         return
 
+    restaurant = getattr(order, "restaurant", None)
+    if restaurant and restaurant.assistant_enabled is False:
+        return
+
     status_raw = getattr(order, "order_status", None) or ""
     status_value = str(status_raw).upper()
     message = f"Pedido #{order.id}\\nStatus atualizado: {status_value}"
@@ -135,3 +139,5 @@ def update_order_status(order_id: int, new_status: str) -> dict:
             "customer_phone": order.customer_phone,
             "whatsapp_link": whatsapp_link,
         }
+
+
