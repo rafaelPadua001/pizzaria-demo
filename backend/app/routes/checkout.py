@@ -8,9 +8,9 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import Order, OrderItem, Restaurant
-from ..config.tenant import RESTAURANT_ID
 from ..schemas import CheckoutRequest, CheckoutResponse, OrderCreatedResponse
-from ..services.mercadopago_service import create_preference
+from ..services.payment_service import create_preference
+from ..services.tenant_context import get_current_restaurant, get_current_restaurant_id
 
 
 router = APIRouter(prefix="/api/orders", tags=["Checkout"])
@@ -31,19 +31,47 @@ def _get_base_url() -> str:
     return os.getenv("BASE_URL", "http://127.0.0.1:8000").rstrip("/")
 
 
+def _build_notification_url(restaurant: Restaurant | None) -> str:
+    notification_url = os.getenv("MERCADOPAGO_NOTIFICATION_URL")
+    if notification_url:
+        return notification_url
+
+    base_url = _get_base_url()
+    if restaurant and restaurant.slug:
+        return f"{base_url}/{restaurant.slug}/webhook/mercadopago"
+    return f"{base_url}/webhook/mercadopago"
+
+
+def _resolve_restaurant(payload: CheckoutRequest, db: Session) -> Restaurant:
+    restaurant = get_current_restaurant(db)
+    if restaurant and payload.restaurant_slug and restaurant.slug != payload.restaurant_slug:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Restaurante nao encontrado.",
+        )
+    if restaurant:
+        return restaurant
+
+    restaurant = (
+        db.query(Restaurant)
+        .filter(Restaurant.slug == payload.restaurant_slug)
+        .first()
+    )
+    if not restaurant:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Restaurante nao encontrado.",
+        )
+    return restaurant
+
+
 @router.post("/checkout", response_model=CheckoutResponse, status_code=status.HTTP_201_CREATED)
 def create_order_checkout(
     payload: CheckoutRequest,
     db: Session = Depends(get_db),
     _=Depends(require_api_key),
 ) -> CheckoutResponse:
-    restaurant = (
-        db.query(Restaurant).filter(Restaurant.slug == payload.restaurant_slug, Restaurant.id == RESTAURANT_ID).first()
-    )
-    if not restaurant:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Restaurante nao encontrado."
-        )
+    restaurant = _resolve_restaurant(payload, db)
 
     if not payload.items:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Items required")
@@ -84,15 +112,12 @@ def create_order_checkout(
     order.items = order_items
 
     base_url = _get_base_url()
-    notification_url = os.getenv(
-        "MERCADOPAGO_NOTIFICATION_URL",
-        f"{base_url}/webhook/mercadopago",
-    )
     back_urls = {
         "success": f"{base_url}/payment.html",
         "failure": f"{base_url}/payment.html",
         "pending": f"{base_url}/payment.html",
     }
+    notification_url = _build_notification_url(restaurant)
 
     try:
         preference_id, checkout_url = create_preference(
@@ -121,13 +146,7 @@ def create_order_precheckout(
     db: Session = Depends(get_db),
     _=Depends(require_api_key),
 ) -> OrderCreatedResponse:
-    restaurant = (
-        db.query(Restaurant).filter(Restaurant.slug == payload.restaurant_slug, Restaurant.id == RESTAURANT_ID).first()
-    )
-    if not restaurant:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Restaurante nao encontrado."
-        )
+    restaurant = _resolve_restaurant(payload, db)
 
     if not payload.items:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Items required")
@@ -190,24 +209,23 @@ def create_checkout_for_order(
     if not order.items:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Items required")
 
-    restaurant_id = order.restaurant_id or RESTAURANT_ID
-    restaurant = db.query(Restaurant).filter(Restaurant.id == restaurant_id).first()
+    restaurant = get_current_restaurant(db)
+    if not restaurant:
+        restaurant_id = order.restaurant_id or get_current_restaurant_id()
+        restaurant = db.query(Restaurant).filter(Restaurant.id == restaurant_id).first()
+
     if not restaurant:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Restaurante nao encontrado."
         )
 
     base_url = _get_base_url()
-    notification_url = os.getenv(
-        "MERCADOPAGO_NOTIFICATION_URL",
-        f"{base_url}/webhook/mercadopago",
-    )
     back_urls = {
         "success": f"{base_url}/payment.html",
         "failure": f"{base_url}/payment.html",
         "pending": f"{base_url}/payment.html",
     }
-
+    notification_url = _build_notification_url(restaurant)
 
     try:
         preference_id, checkout_url = create_preference(
@@ -227,5 +245,3 @@ def create_checkout_for_order(
     db.refresh(order)
 
     return CheckoutResponse(order_id=order.id, checkout_url=checkout_url)
-
-

@@ -17,15 +17,16 @@ MP_MERCHANT_ORDER_URL = "https://api.mercadopago.com/merchant_orders/{merchant_o
 
 
 def _get_access_token(restaurant: Restaurant | None = None) -> str:
-    access_token = os.getenv("MERCADO_PAGO_ACCESS_TOKEN")
-    if not access_token and restaurant:
+    access_token = None
+    if restaurant and restaurant.mercadopago_access_token:
         access_token = restaurant.mercadopago_access_token
     if not access_token:
-        access_token = os.getenv("MERCADOPAGO_ACCESS_TOKEN", "")
+        access_token = os.getenv("MERCADOPAGO_ACCESS_TOKEN") or os.getenv(
+            "MERCADO_PAGO_ACCESS_TOKEN"
+        )
     if not access_token:
         raise RuntimeError("Mercado Pago access token nao configurado.")
     return access_token
-
 
 def _is_sandbox(access_token: str) -> bool:
     return access_token.startswith("TEST-")
@@ -169,12 +170,16 @@ def create_checkout(
     )
 
 
-def check_payment_status(payment_id: str) -> dict:
-    access_token = _get_access_token()
+def check_payment_status(
+    payment_id: str,
+    access_token: str | None = None,
+    restaurant: Restaurant | None = None,
+) -> dict:
+    access_token_value = access_token or _get_access_token(restaurant)
     try:
         response = requests.get(
             MP_PAYMENT_URL.format(payment_id=payment_id),
-            headers={"Authorization": f"Bearer {access_token}"},
+            headers={"Authorization": f"Bearer {access_token_value}"},
             timeout=10,
         )
         response.raise_for_status()
@@ -202,9 +207,8 @@ def get_payment(payment_id: str, access_token: str) -> dict:
 
     payload = response.json()
     if not isinstance(payload, dict):
-        raise RuntimeError("Falha ao consultar pagamento no Mercado Pago.")
+        raise RuntimeError("Resposta invalida do Mercado Pago.")
     return payload
-
 
 def get_merchant_order(merchant_order_id: str, access_token: str) -> dict:
     try:
@@ -222,3 +226,5 @@ def get_merchant_order(merchant_order_id: str, access_token: str) -> dict:
     if not isinstance(payload, dict):
         raise RuntimeError("Falha ao consultar merchant_order no Mercado Pago.")
     return payload
+
+
