@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from ..database import SessionLocal
 from ..models import Order, Restaurant
+from ..config.tenant import RESTAURANT_ID
 from ..services.mercadopago_service import get_payment
 
 
@@ -114,11 +115,9 @@ def _get_tokens(db: Session) -> list[str]:
         tokens.append(env_token)
 
     if not tokens:
-        tokens = [
-            restaurant.mercadopago_access_token
-            for restaurant in db.query(Restaurant).all()
-            if restaurant.mercadopago_access_token
-        ]
+        restaurant = db.query(Restaurant).filter(Restaurant.id == RESTAURANT_ID).first()
+        if restaurant and restaurant.mercadopago_access_token:
+            tokens.append(restaurant.mercadopago_access_token)
 
     return tokens
 
@@ -249,3 +248,5 @@ async def mercadopago_webhook(request: Request) -> dict[str, str]:
             ) from exc
 
     return {"status": "ok"}
+
+

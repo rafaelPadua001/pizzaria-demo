@@ -333,7 +333,58 @@ def startup_check():
           END IF;
         END $$;
         """))
+        # Tenant restaurant isolation columns
+        connection.execute(text("ALTER TABLE categories ADD COLUMN IF NOT EXISTS restaurant_id INTEGER"))
+        connection.execute(text("ALTER TABLE products ADD COLUMN IF NOT EXISTS restaurant_id INTEGER"))
+        connection.execute(text("ALTER TABLE order_items ADD COLUMN IF NOT EXISTS restaurant_id INTEGER"))
 
+        connection.execute(text("""
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'categories_restaurant_id_fkey'
+          ) THEN
+            ALTER TABLE categories
+            ADD CONSTRAINT categories_restaurant_id_fkey
+            FOREIGN KEY (restaurant_id)
+            REFERENCES restaurants(id)
+            ON DELETE SET NULL;
+          END IF;
+        END $$;
+        """))
+
+        connection.execute(text("""
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'products_restaurant_id_fkey'
+          ) THEN
+            ALTER TABLE products
+            ADD CONSTRAINT products_restaurant_id_fkey
+            FOREIGN KEY (restaurant_id)
+            REFERENCES restaurants(id)
+            ON DELETE SET NULL;
+          END IF;
+        END $$;
+        """))
+
+        connection.execute(text("""
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'order_items_restaurant_id_fkey'
+          ) THEN
+            ALTER TABLE order_items
+            ADD CONSTRAINT order_items_restaurant_id_fkey
+            FOREIGN KEY (restaurant_id)
+            REFERENCES restaurants(id)
+            ON DELETE SET NULL;
+          END IF;
+        END $$;
+        """))
     # Teste conexão
     with engine.connect() as connection:
         connection.execute(text("SELECT 1"))
@@ -343,3 +394,9 @@ def startup_check():
 # ===============================
 
 app.mount("/", StaticFiles(directory=PUBLIC_DIR, html=True), name="frontend")
+
+
+
+
+
+
