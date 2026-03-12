@@ -118,6 +118,14 @@ def health_check():
 def list_restaurants(db: Session = Depends(get_db)):
     return db.query(Restaurant).all()
 
+@app.get("/public/categories")
+def public_categories(db: Session = Depends(get_db)):
+    return db.query(Category).all()
+
+@app.get("/public/products")
+def public_products(db: Session = Depends(get_db)):
+    return db.query(Product).all()
+
 @app.get("/debug/time")
 def debug_time():
     return {
