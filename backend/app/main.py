@@ -1,4 +1,4 @@
-import os
+﻿import os
 from pathlib import Path
 
 from fastapi import FastAPI, Depends
@@ -13,6 +13,7 @@ from .middleware.tenant_resolver import TenantResolverMiddleware
 from .database import Base, engine, get_db
 from .models import Admin, Category, Product, Order, OrderItem, PageSection, Page, Restaurant  # noqa
 from .routes import admin, admins, auth, categories, products, orders, admin_content, content, catalog, checkout, webhook, payments, internal, tenant_config, tenant_pages, saas, admin_notifications, ws_admin_notifications
+from .routes.api.v1 import categories as api_v1_categories, products as api_v1_products, menu as api_v1_menu
 from .utils.time import get_current_time
 
 
@@ -68,6 +69,9 @@ app.include_router(admin.router)
 app.include_router(admins.router)
 app.include_router(categories.router)
 app.include_router(products.router)
+app.include_router(api_v1_categories.router)
+app.include_router(api_v1_products.router)
+app.include_router(api_v1_menu.router, prefix="/api/v1")
 app.include_router(orders.router)
 app.include_router(admin_content.router)
 app.include_router(content.router)
@@ -132,7 +136,7 @@ def startup_check():
 
     with engine.begin() as connection:
 
-        # Renomeia section_id -> category_id se necessário
+        # Renomeia section_id -> category_id se necessÃ¡rio
         connection.execute(text("""
         DO $$
         BEGIN
@@ -346,7 +350,7 @@ def startup_check():
         END $$;
         """))
 
-        # Cria FK correta se não existir
+        # Cria FK correta se nÃ£o existir
         connection.execute(text("""
         DO $$
         BEGIN
@@ -514,7 +518,7 @@ def startup_check():
         CREATE INDEX IF NOT EXISTS products_restaurant_category_idx
         ON products (restaurant_id, category_id)
         """))
-    # Teste conexão
+    # Teste conexÃ£o
     with engine.connect() as connection:
         connection.execute(text("SELECT 1"))
 
@@ -523,6 +527,8 @@ def startup_check():
 # ===============================
 
 app.mount("/", StaticFiles(directory=PUBLIC_DIR, html=True), name="frontend")
+
+
 
 
 
