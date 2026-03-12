@@ -3,7 +3,6 @@
   const titleEl = document.getElementById("categoryTitle");
   const descEl = document.getElementById("categoryDescription");
   const gridEl = document.getElementById("productsGrid");
-
   const formatPrice = (value) => {
     return `R$ ${Number(value || 0).toFixed(2).replace(".", ",")}`;
   };
@@ -131,27 +130,41 @@
     }
 
     try {
-      const response = await fetch(`${API_BASE}/catalogo/${encodeURIComponent(slug)}`, {
+      const response = await fetch(`${API_BASE}/catalogo/${slug}`, {
         headers: { Accept: "application/json" },
+        cache: "no-store"
       });
+
       if (!response.ok) {
         throw new Error("Categoria nao encontrada");
       }
+
       const data = await response.json();
-      const category = data.category || data;
-      const products = Array.isArray(data.products)
-        ? data.products
-        : Array.isArray(category?.products)
-          ? category.products
-          : [];
-      if (titleEl) titleEl.textContent = category?.title || category?.name || "Categoria";
-      if (descEl) descEl.textContent = category?.description || "";
-      document.title = `${category?.title || category?.name || "Catalogo"} | Pizzaria Demo`;
+
+      const category = data.category || {};
+      const products = data.products || [];
+
+      if (titleEl) titleEl.textContent = category.title || category.name || "Categoria";
+      if (descEl) descEl.textContent = category.description || "";
+
+      document.title = `${category.title || category.name || "Catalogo"} | Pizzaria Demo`;
+
       renderProducts(category, products);
+
     } catch (error) {
+      console.warn("[catalogo] erro ao carregar categoria", error);
       setErrorState("Categoria nao encontrada");
     }
   };
 
-  document.addEventListener("DOMContentLoaded", loadCategory);
+  const initCatalogo = async () => {
+    setTimeout(() => {
+      loadCategory();
+    }, 50);
+  };
+
+  window.addEventListener("load", () => {
+    initCatalogo();
+  });
 })();
+
