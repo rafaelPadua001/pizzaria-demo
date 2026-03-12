@@ -1,6 +1,3 @@
-from pathlib import Path
-from uuid import uuid4
-
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
@@ -15,13 +12,11 @@ from ..schemas import (
     PageUpdate,
 )
 from .admin import get_current_admin
+from ..services.cloudinary_service import upload_product_image
+from ..services.tenant_context import get_current_restaurant
 
 
 router = APIRouter(prefix="/admin", tags=["admin-content"])
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-UPLOAD_DIR = BASE_DIR / "static" / "uploads"
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 @router.get("/sections", response_model=list[PageSectionResponse])
@@ -165,11 +160,22 @@ def delete_page(
 @router.post("/upload")
 def upload_file(
     file: UploadFile = File(...),
+    db: Session = Depends(get_db),
     _admin=Depends(get_current_admin),
 ) -> dict:
-    suffix = Path(file.filename).suffix.lower()
-    name = f"{uuid4().hex}{suffix}"
-    target = UPLOAD_DIR / name
-    with target.open("wb") as buffer:
-        buffer.write(file.file.read())
-    return {"url": f"/static/uploads/{name}"}
+    try:
+        file.file.seek(0)
+    except Exception:
+        pass
+
+    restaurant = get_current_restaurant(db)
+    restaurant_name = (
+        (restaurant.slug or "").strip()
+        if restaurant is not None
+        else ""
+    )
+    if not restaurant_name:
+        restaurant_name = (restaurant.name or "").strip() if restaurant else "default"
+
+    image_url = upload_product_image(file, restaurant_name)
+    return {"url": image_url}

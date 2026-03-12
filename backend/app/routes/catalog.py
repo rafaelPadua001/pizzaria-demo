@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from .. import models
 from ..database import get_db
+from ..services.image_utils import resolve_image_url
 
 
 router = APIRouter(prefix="/catalogo", tags=["Catalogo"])
@@ -62,7 +63,7 @@ def get_catalog_by_slug(slug: str, request: Request, db: Session = Depends(get_d
                 "name": product.name,
                 "description": product.description,
                 "price": float(product.price),
-                "image_url": f"/uploads/products/{product.image_url}" if product.image_url else None,
+                "image_url": resolve_image_url(product.image_url),
                 "is_active": product.is_active,
                 "category_id": product.category_id,
             }

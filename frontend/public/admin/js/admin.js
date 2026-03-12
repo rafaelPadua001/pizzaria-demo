@@ -342,7 +342,12 @@
       const title = document.createElement("div");
       const image = document.createElement("img");
       image.className = "product-image";
-      image.src = product.image_url ? `${API_BASE}/uploads/products/${product.image_url}` : "placeholder.png";
+      const rawImage = typeof product.image_url === "string" ? product.image_url : "";
+      image.src = rawImage
+        ? rawImage.startsWith("http")
+          ? rawImage
+          : API_BASE + (rawImage.startsWith("/") ? "" : "/") + rawImage
+        : "placeholder.png";
       image.alt = product.slug || `Produto ${product.name}`;
       info.appendChild(image);
       
