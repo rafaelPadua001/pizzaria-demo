@@ -137,9 +137,15 @@ def create_preference(
     if response.status_code not in {200, 201}:
         logger.error(
             "mp_preference_error",
-            extra={"order_id": order.id, "response": response_payload},
+            extra={
+                "order_id": order.id,
+                "status_code": response.status_code,
+                "response": response_payload,
+            },
         )
-        raise RuntimeError("Falha ao criar preferencia no Mercado Pago.")
+        raise RuntimeError(
+            f"Falha ao criar preferencia no Mercado Pago. status={response.status_code}"
+        )
 
     preference_id = response_payload.get("id")
     checkout_url = (

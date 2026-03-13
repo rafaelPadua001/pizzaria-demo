@@ -569,6 +569,20 @@ const CHECKOUT_KEY = "checkout_data";
 const API_BASE = "";
 const RESTAURANT_ENV_URL = "/js/restaurant.env";
 let restaurantEnvPromise = null;
+const CHECKOUT_SESSION_KEY = "checkout_session_id";
+
+const getOrCreateSessionId = () => {
+  const existing = localStorage.getItem(CHECKOUT_SESSION_KEY);
+  if (existing) return existing;
+  let newId = "";
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    newId = crypto.randomUUID();
+  } else {
+    newId = `sess_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  }
+  localStorage.setItem(CHECKOUT_SESSION_KEY, newId);
+  return newId;
+};
 
 const parseEnvText = (text) => {
   const env = {};
@@ -599,6 +613,13 @@ const loadRestaurantEnv = () => {
         window.PIZZA_RESTAURANT_SLUG = env.PIZZA_RESTAURANT_SLUG;
         localStorage.setItem("restaurantSlug", env.PIZZA_RESTAURANT_SLUG);
       }
+      if (env.PIZZA_RESTAURANT_ID) {
+        const parsedId = Number(env.PIZZA_RESTAURANT_ID);
+        if (Number.isFinite(parsedId) && parsedId > 0) {
+          window.PIZZA_RESTAURANT_ID = parsedId;
+          localStorage.setItem("restaurantId", String(parsedId));
+        }
+      }
     })
     .catch(() => undefined);
   return restaurantEnvPromise;
@@ -609,9 +630,16 @@ const getRestaurantConfig = () => ({
     window.PIZZA_INTERNAL_API_KEY || localStorage.getItem("pizzariaInternalKey") || "",
   restaurantSlug:
     window.PIZZA_RESTAURANT_SLUG || localStorage.getItem("restaurantSlug") || "",
+  restaurantId: (() => {
+    const fromWindow = Number(window.PIZZA_RESTAURANT_ID);
+    if (Number.isFinite(fromWindow) && fromWindow > 0) return fromWindow;
+    const fromStorage = Number(localStorage.getItem("restaurantId"));
+    return Number.isFinite(fromStorage) && fromStorage > 0 ? fromStorage : null;
+  })(),
 });
 
 const saveOrderToApi = async ({ cart, checkoutData, totalAmount }) => {
+  // Monta os itens do pedido
   const items = cart.map((item) => {
     const parsedId = Number(item.id);
     const productId = Number.isFinite(parsedId) && parsedId > 0 ? parsedId : null;
@@ -625,39 +653,23 @@ const saveOrderToApi = async ({ cart, checkoutData, totalAmount }) => {
   });
 
   await loadRestaurantEnv();
-  const { internalApiKey, restaurantSlug } = getRestaurantConfig();
-
-  if (internalApiKey && restaurantSlug) {
-    const response = await fetch(`${API_BASE}/api/orders/checkout`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-API-KEY": internalApiKey,
-      },
-      body: JSON.stringify({
-        restaurant_slug: restaurantSlug,
-        customer_name: checkoutData.nome || null,
-        customer_phone: checkoutData.telefone || null,
-        items,
-      }),
-    });
-
-    if (!response.ok) {
-      const data = await response.json().catch(() => null);
-      throw new Error(data?.detail || "Falha ao criar checkout.");
-    }
-
-    return response.json().catch(() => null);
-  }
-
-  throw new Error("Checkout interno nao configurado. Verifique js/restaurant.env.");
+  const { restaurantId } = getRestaurantConfig();
 
   const payload = {
     customer_name: checkoutData.nome || null,
-    customer_phone: checkoutData.telefone || null,
+    customer_phone: checkoutData.customer_phone || null,
     total_amount: Number.isFinite(Number(totalAmount)) ? Number(totalAmount) : null,
+    delivery_fee: Number.isFinite(Number(checkoutData.delivery_fee))
+      ? Number(checkoutData.delivery_fee)
+      : null,
+    session_id: checkoutData.session_id || null,
+    restaurant_id: restaurantId,
     items,
   };
+
+  if (!restaurantId) {
+    throw new Error("Restaurant ID nao configurado. Verifique js/restaurant.env.");
+  }
 
   const response = await fetch(`${API_BASE}/orders/public`, {
     method: "POST",
@@ -667,10 +679,27 @@ const saveOrderToApi = async ({ cart, checkoutData, totalAmount }) => {
 
   if (!response.ok) {
     const data = await response.json().catch(() => null);
-    throw new Error(data?.detail || "Falha ao salvar o pedido.");
+    throw new Error(data?.detail || "Falha ao criar pedido.");
   }
 
-  return response.json().catch(() => null);
+  const orderData = await response.json().catch(() => null);
+  const orderId = orderData?.id;
+  if (orderId === undefined || orderId === null) {
+    throw new Error("Falha ao criar pedido.");
+  }
+console.log(API_BASE);
+  const paymentResponse = await fetch(`${API_BASE}/payments/create`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ order_id: orderId }),
+  });
+
+  if (!paymentResponse.ok) {
+    const data = await paymentResponse.json().catch(() => null);
+    throw new Error(data?.detail || "Falha ao criar pagamento.");
+  }
+
+  return paymentResponse.json().catch(() => null);
 };
 
 const getCheckoutData = () => {
@@ -805,6 +834,7 @@ const initCheckoutPage = () => {
   }
 
   const nameInput = document.getElementById("checkoutName");
+  const whatsappInput = document.getElementById("checkout-whatsapp");
   const addressInput = document.getElementById("checkoutAddress");
   const cepInput = document.getElementById("checkoutCep");
   const complementInput = document.getElementById("checkoutComplement");
@@ -816,6 +846,7 @@ const initCheckoutPage = () => {
   const populateForm = () => {
     const data = getCheckoutData();
     if (nameInput) nameInput.value = data.nome || "";
+    if (whatsappInput) whatsappInput.value = data.customer_phone || "";
     if (addressInput) addressInput.value = data.endereco || "";
     if (cepInput) cepInput.value = data.cep || "";
     if (complementInput) complementInput.value = data.complemento || "";
@@ -824,9 +855,11 @@ const initCheckoutPage = () => {
   const collectFormData = () => {
     return {
       nome: nameInput?.value?.trim() || "",
+      customer_phone: whatsappInput?.value?.trim() || "",
       endereco: addressInput?.value?.trim() || "",
       cep: cepInput?.value?.trim() || "",
-      complemento: complementInput?.value?.trim() || ""
+      complemento: complementInput?.value?.trim() || "",
+      session_id: getOrCreateSessionId(),
     };
   };
 
@@ -1014,7 +1047,7 @@ const initCheckoutPage = () => {
     if (!cart.length) return;
 
     const checkoutData = collectFormData();
-    if (!checkoutData.nome || !checkoutData.endereco || !checkoutData.cep) {
+    if (!checkoutData.nome || !checkoutData.customer_phone || !checkoutData.endereco || !checkoutData.cep) {
       form.reportValidity();
       return;
     }
@@ -1039,31 +1072,19 @@ const initCheckoutPage = () => {
 
     try {
       const checkoutResult = await saveOrderToApi({ cart, checkoutData, totalAmount: total });
-      if (checkoutResult?.checkout_url) {
+      if (checkoutResult?.init_point) {
         clearCart();
         localStorage.removeItem(CHECKOUT_KEY);
         setDeliveryLoading(false);
-        window.location.href = checkoutResult.checkout_url;
+        window.location.href = checkoutResult.init_point;
         return;
       }
+      setDeliveryLoading(false);
+      setCheckoutError("Checkout indisponivel no momento. Tente novamente em instantes.");
     } catch (error) {
       setDeliveryLoading(false);
-      setCheckoutError(error.message || "Nao foi possivel registrar o pedido.");
-      return;
+      setCheckoutError(error.message || "Nao foi possivel iniciar o checkout.");
     }
-
-    const message = buildCheckoutMessage({
-      cart,
-      checkoutData,
-      distanceKm,
-      deliveryFee,
-      total
-    });
-
-    clearCart();
-    localStorage.removeItem(CHECKOUT_KEY);
-    setDeliveryLoading(false);
-    window.location.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
   });
 };
 
