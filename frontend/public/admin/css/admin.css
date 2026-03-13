@@ -557,6 +557,28 @@ body {
   border: 1px solid var(--stroke);
 }
 
+.image-preview {
+  position: relative;
+  max-width: 360px;
+}
+
+.image-preview .preview-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 
 
 @media (min-width: 900px) {
