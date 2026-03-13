@@ -31,6 +31,7 @@
   const productError = document.getElementById("productError");
   const productsList = document.getElementById("productsList");
   const refreshProductsBtn = document.getElementById("refreshProducts");
+  const productImagePreview = document.getElementById("productImagePreview");
 
   const ordersList = document.getElementById("ordersList");
   const ordersError = document.getElementById("ordersError");
@@ -46,6 +47,10 @@
   const pageSectionModalError = document.getElementById("pageSectionModalError");
   const pageSectionImageInput = document.getElementById("pageSectionImage");
   const pageSectionPreview = document.getElementById("pageSectionPreview");
+  const confirmModal = document.getElementById("confirmModal");
+  const confirmTitle = document.getElementById("confirmTitle");
+  const confirmMessage = document.getElementById("confirmMessage");
+  const confirmOk = document.getElementById("confirmOk");
 
   const pageForm = document.getElementById("pageForm");
   const pagesList = document.getElementById("pagesList");
@@ -69,6 +74,7 @@
   let notificationByOrderId = new Map();
   let notificationSound = null;
   let websocket = null;
+  let lastImageUpdateTs = null;
   const restaurantId =
     window.RESTAURANT_ID ||
     document.body.dataset.restaurantId ||
@@ -235,6 +241,33 @@
     setStatus("Autenticado");
   };
 
+  const openConfirmModal = (title, message) => new Promise((resolve) => {
+    if (!confirmModal) {
+      resolve(false);
+      return;
+    }
+    if (confirmTitle) confirmTitle.textContent = title || "Confirmar";
+    if (confirmMessage) confirmMessage.textContent = message || "Tem certeza?";
+    showElement(confirmModal);
+
+    const cleanup = (result) => {
+      hideElement(confirmModal);
+      confirmOk?.removeEventListener("click", onConfirm);
+      confirmModal?.querySelectorAll("[data-confirm-close]").forEach((btn) => {
+        btn.removeEventListener("click", onCancel);
+      });
+      resolve(result);
+    };
+
+    const onConfirm = () => cleanup(true);
+    const onCancel = () => cleanup(false);
+
+    confirmOk?.addEventListener("click", onConfirm);
+    confirmModal?.querySelectorAll("[data-confirm-close]").forEach((btn) => {
+      btn.addEventListener("click", onCancel);
+    });
+  });
+
   const setActiveView = (viewName) => {
     document.querySelectorAll("[data-view]").forEach((panel) => {
       if (panel.getAttribute("data-view") === viewName) {
@@ -343,11 +376,17 @@
       const image = document.createElement("img");
       image.className = "product-image";
       const rawImage = typeof product.image_url === "string" ? product.image_url : "";
-      image.src = rawImage
-        ? rawImage.startsWith("http")
-          ? rawImage
-          : API_BASE + (rawImage.startsWith("/") ? "" : "/") + rawImage
-        : "placeholder.png";
+      if (rawImage) {
+        if (rawImage.startsWith("http")) {
+          const cacheKey = product._cache_bust || lastImageUpdateTs;
+          const cacheBust = cacheKey ? `?t=${cacheKey}` : "";
+          image.src = `${rawImage}${cacheBust}`;
+        } else {
+          image.src = API_BASE + (rawImage.startsWith("/") ? "" : "/") + rawImage;
+        }
+      } else {
+        image.src = "placeholder.png";
+      }
       image.alt = product.slug || `Produto ${product.name}`;
       info.appendChild(image);
       
@@ -679,6 +718,15 @@
     productForm.productPrice.value = product.price;
     productForm.productCategory.value = String(product.category_id);
     productForm.querySelector("#productSubmit").textContent = "Atualizar produto";
+    if (productImagePreview) {
+      const rawImage = typeof product.image_url === "string" ? product.image_url : "";
+      const previewUrl = rawImage
+        ? rawImage.startsWith("http")
+          ? rawImage
+          : API_BASE + (rawImage.startsWith("/") ? "" : "/") + rawImage
+        : "";
+      renderProductImagePreview(null, previewUrl || null);
+    }
   };
 
   const resetProductForm = () => {
@@ -688,6 +736,9 @@
     productForm.productPrice.value = "";
     if (productForm.productImage) {
       productForm.productImage.value = "";
+    }
+    if (productImagePreview) {
+      productImagePreview.innerHTML = "";
     }
     productForm.querySelector("#productSubmit").textContent = "Salvar produto";
   };
@@ -754,6 +805,28 @@
     return data.url;
   };
 
+  const renderProductImagePreview = (file, imageUrl) => {
+    if (!productImagePreview) return;
+    if (!file && !imageUrl) {
+      productImagePreview.innerHTML = "";
+      return;
+    }
+    const previewUrl = file ? URL.createObjectURL(file) : imageUrl;
+    productImagePreview.innerHTML = `
+      <img src="${previewUrl}" alt="preview">
+      <button class="preview-close" type="button" aria-label="Remover imagem">×</button>
+    `;
+    const closeBtn = productImagePreview.querySelector(".preview-close");
+    if (closeBtn) {
+      closeBtn.addEventListener("click", () => {
+        if (productForm.productImage) {
+          productForm.productImage.value = "";
+        }
+        productImagePreview.innerHTML = "";
+      });
+    }
+  };
+
   const loadCategories = async () => {
     setAlert(categoryError, "");
     const response = await authFetch("/admin/categories");
@@ -768,6 +841,14 @@
     const response = await authFetch("/products");
     handleAuthError(response);
     products = await response.json();
+    if (lastImageUpdateTs) {
+      products = products.map((item) => {
+        if (typeof item.image_url === "string" && item.image_url.startsWith("http")) {
+          return { ...item, _cache_bust: lastImageUpdateTs };
+        }
+        return item;
+      });
+    }
     renderProducts();
   };
 
@@ -894,7 +975,11 @@
   };
 
   const deleteCategory = async (categoryId) => {
-    if (!confirm("Deseja remover esta categoria?")) return;
+    const accepted = await openConfirmModal(
+      "Remover categoria",
+      "Deseja remover esta categoria?"
+    );
+    if (!accepted) return;
     const response = await authFetch(`/admin/categories/${categoryId}`, { method: "DELETE" });
     handleAuthError(response);
     if (!response.ok) {
@@ -918,19 +1003,31 @@
   };
 
   const updateProduct = async (productId, payload) => {
+    const isFormData = typeof FormData !== "undefined" && payload instanceof FormData;
     const response = await authFetch(`/products/${productId}`, {
       method: "PUT",
-      body: JSON.stringify(payload),
+      body: isFormData ? payload : JSON.stringify(payload),
     });
     handleAuthError(response);
     if (!response.ok) {
       const data = await response.json().catch(() => null);
       throw new Error(data?.detail || "Erro ao atualizar produto.");
     }
+    const updated = await response.json().catch(() => null);
+    if (updated && typeof updated === "object") {
+      lastImageUpdateTs = Date.now();
+      updated._cache_bust = lastImageUpdateTs;
+      products = products.map((item) => (item.id === updated.id ? updated : item));
+      renderProducts();
+    }
   };
 
   const deleteProduct = async (productId) => {
-    if (!confirm("Deseja remover este produto?")) return;
+    const accepted = await openConfirmModal(
+      "Remover produto",
+      "Deseja remover este produto?"
+    );
+    if (!accepted) return;
     const response = await authFetch(`/products/${productId}`, { method: "DELETE" });
     handleAuthError(response);
     if (!response.ok) {
@@ -966,7 +1063,11 @@
   };
 
   const deletePageSection = async (sectionId) => {
-    if (!confirm("Deseja remover esta secao?")) return;
+    const accepted = await openConfirmModal(
+      "Remover secao",
+      "Deseja remover esta secao?"
+    );
+    if (!accepted) return;
     const response = await authFetch(`/admin/sections/${sectionId}`, { method: "DELETE" });
     handleAuthError(response);
     if (!response.ok) {
@@ -1002,7 +1103,11 @@
   };
 
   const deletePage = async (pageId) => {
-    if (!confirm("Deseja remover esta pagina?")) return;
+    const accepted = await openConfirmModal(
+      "Remover pagina",
+      "Deseja remover esta pagina?"
+    );
+    if (!accepted) return;
     const response = await authFetch(`/admin/pages/${pageId}`, { method: "DELETE" });
     handleAuthError(response);
     if (!response.ok) {
@@ -1101,13 +1206,23 @@
 
     try {
       if (productId) {
-        const payload = {
-          name,
-          description,
-          price,
-          category_id: categoryId,
-        };
-        await updateProduct(productId, payload);
+        if (imageFile) {
+          const formData = new FormData();
+          formData.append("name", name);
+          formData.append("description", description);
+          formData.append("price", String(price));
+          formData.append("category_id", String(categoryId));
+          formData.append("image", imageFile);
+          await updateProduct(productId, formData);
+        } else {
+          const payload = {
+            name,
+            description,
+            price,
+            category_id: categoryId,
+          };
+          await updateProduct(productId, payload);
+        }
       } else {
         const formData = new FormData();
         formData.append("name", name);
@@ -1126,6 +1241,13 @@
       setAlert(productError, error.message || "Erro ao salvar produto.");
     }
   });
+
+  if (productForm.productImage) {
+    productForm.productImage.addEventListener("change", (event) => {
+      const file = event.target.files?.[0];
+      renderProductImagePreview(file || null, null);
+    });
+  }
 
   document.getElementById("productCancel").addEventListener("click", () => {
     resetProductForm();

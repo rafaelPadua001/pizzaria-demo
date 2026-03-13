@@ -176,6 +176,7 @@
               Imagem do produto
               <input type="file" name="productImage" accept="image/*">
             </label>
+            <div class="image-preview" id="productImagePreview"></div>
             <div class="form-actions">
               <button class="btn-primary" type="submit" id="productSubmit">Salvar produto</button>
               <button class="btn-ghost" type="button" id="productCancel">Cancelar</button>
@@ -281,6 +282,20 @@
         </div>
         <div class="alert" id="pageSectionModalError" hidden></div>
       </form>
+    </div>
+  </div>
+  <div class="modal" id="confirmModal" hidden>
+    <div class="modal-backdrop" data-confirm-close></div>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="confirmTitle">Confirmar</h3>
+        <button class="btn-ghost" type="button" data-confirm-close>Fechar</button>
+      </div>
+      <p id="confirmMessage" class="muted">Tem certeza?</p>
+      <div class="form-actions">
+        <button class="btn-primary" type="button" id="confirmOk">Confirmar</button>
+        <button class="btn-ghost" type="button" data-confirm-close>Cancelar</button>
+      </div>
     </div>
   </div>
   <script src="/admin/js/admin.js"></script>
