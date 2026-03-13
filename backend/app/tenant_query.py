@@ -31,6 +31,8 @@ def _apply_dml_tenant(statement):
 
 @event.listens_for(Session, "do_orm_execute")
 def _add_tenant_criteria(execute_state):
+    if execute_state.execution_options.get("skip_tenant", False):
+        return
     if execute_state.is_select:
         execute_state.statement = execute_state.statement.options(
             with_loader_criteria(

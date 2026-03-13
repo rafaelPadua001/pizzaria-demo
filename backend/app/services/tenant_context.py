@@ -34,11 +34,12 @@ def reset_current_restaurant(tokens: tuple[object, object]) -> None:
     _current_restaurant_id.reset(restaurant_id_token)
 
 
-def get_current_restaurant_id() -> int:
+def get_current_restaurant_id() -> int | None:
     value = _current_restaurant_id.get()
-    if value is None:
-        return RESTAURANT_ID
-    return int(value)
+    if value is not None:
+        return int(value)
+    # Multi-tenant safety: do not fall back to a global env id when unset.
+    return int(RESTAURANT_ID) if RESTAURANT_ID > 0 else None
 
 
 def get_current_restaurant(db: Session) -> Restaurant | None:

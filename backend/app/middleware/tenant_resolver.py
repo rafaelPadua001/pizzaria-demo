@@ -13,6 +13,7 @@ from ..services.tenant_context import reset_current_restaurant, set_current_rest
 
 
 RESERVED_PREFIXES = {
+    "api",
     "admin",
     "admins",
     "auth",
