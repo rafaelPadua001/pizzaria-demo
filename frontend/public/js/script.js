@@ -653,7 +653,8 @@ const saveOrderToApi = async ({ cart, checkoutData, totalAmount }) => {
   });
 
   await loadRestaurantEnv();
-  const { restaurantId } = getRestaurantConfig();
+  const { restaurantId, restaurantSlug } = getRestaurantConfig();
+  const tenantPrefix = restaurantSlug ? `/${restaurantSlug}` : "";
 
   const payload = {
     customer_name: checkoutData.nome || null,
@@ -671,7 +672,7 @@ const saveOrderToApi = async ({ cart, checkoutData, totalAmount }) => {
     throw new Error("Restaurant ID nao configurado. Verifique js/restaurant.env.");
   }
 
-  const response = await fetch(`${API_BASE}/orders/public`, {
+  const response = await fetch(`${API_BASE}${tenantPrefix}/orders/public`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -687,8 +688,7 @@ const saveOrderToApi = async ({ cart, checkoutData, totalAmount }) => {
   if (orderId === undefined || orderId === null) {
     throw new Error("Falha ao criar pedido.");
   }
-console.log(API_BASE);
-  const paymentResponse = await fetch(`${API_BASE}/payments/create`, {
+  const paymentResponse = await fetch(`${API_BASE}${tenantPrefix}/payments/create`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ order_id: orderId }),
@@ -730,17 +730,43 @@ const calculateDistanceKm = (lat1, lon1, lat2, lon2) => {
   return R * c;
 };
 
+const geocodeCache = {};
+let geocodeRunning = false;
+let geocodeTimeout = null;
+
+const debounceGeocode = (callback, delay = 800) => {
+  if (geocodeTimeout) {
+    clearTimeout(geocodeTimeout);
+  }
+  geocodeTimeout = setTimeout(callback, delay);
+};
+
 const geocodeAddress = async (address) => {
   if (!address) {
     throw new Error("Endere�o vazio");
   }
 
+  if (geocodeCache[address]) {
+    return geocodeCache[address];
+  }
+
   const query = encodeURIComponent(address);
-  const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q=${query}`, {
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q=${query}`;
+  let response = await fetch(url, {
     headers: {
       "Accept-Language": "pt-BR"
     }
   });
+
+  if (response.status === 429) {
+    console.warn("Nominatim rate limit reached. Retrying in 2 seconds");
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    response = await fetch(url, {
+      headers: {
+        "Accept-Language": "pt-BR"
+      }
+    });
+  }
 
   if (!response.ok) {
     throw new Error("Falha ao consultar o endere�o");
@@ -751,21 +777,32 @@ const geocodeAddress = async (address) => {
     throw new Error("Endere�o n�o encontrado");
   }
 
-  return {
+  const result = {
     lat: Number(data[0].lat),
     lon: Number(data[0].lon)
   };
+  geocodeCache[address] = result;
+  return result;
 };
 
 const calculateDeliveryDistance = async (address, cep) => {
-  const fullQuery = [address, cep, "Brasil"].filter(Boolean).join(", ");
+  if (geocodeRunning) return null;
+  geocodeRunning = true;
+  const cleanCep = (cep || "").replace(/\D/g, "");
+  if (cleanCep.length !== 8) {
+    geocodeRunning = false;
+    return null;
+  }
+  const formattedCep = cleanCep.replace(/^(\d{5})(\d{3})$/, "$1-$2");
+  const fullQuery = [address, formattedCep, "Brasil"].filter(Boolean).join(", ");
   let location;
   try {
     location = await geocodeAddress(fullQuery);
   } catch (error) {
-    if (cep) {
-      location = await geocodeAddress(`${cep}, Brasil`);
+    if (formattedCep) {
+      location = await geocodeAddress(`${formattedCep}, Brasil`);
     } else {
+      geocodeRunning = false;
       throw error;
     }
   }
@@ -775,6 +812,7 @@ const calculateDeliveryDistance = async (address, cep) => {
     location.lat,
     location.lon
   );
+  geocodeRunning = false;
   return Number(distance.toFixed(2));
 };
 
@@ -911,12 +949,13 @@ const initCheckoutPage = () => {
     saveCheckoutData(collectFormData());
     renderCheckout();
     if (event?.target === cepInput) {
-      if (deliveryDebounceTimer) {
-        clearTimeout(deliveryDebounceTimer);
+      const cleanCep = (cepInput?.value || "").replace(/\D/g, "");
+      if (cleanCep.length !== 8) {
+        return;
       }
-      deliveryDebounceTimer = setTimeout(() => {
+      debounceGeocode(() => {
         calculateDelivery();
-      }, 500);
+      });
       return;
     }
     calculateDelivery();
@@ -950,6 +989,10 @@ const initCheckoutPage = () => {
       setDeliveryLoading(true);
       setCheckoutError("");
       const distanceKm = await calculateDeliveryDistance(data.endereco, data.cep);
+      if (distanceKm === null) {
+        setDeliveryLoading(false);
+        return;
+      }
       const deliveryFee = Number((distanceKm * VALOR_POR_KM).toFixed(2));
       const total = calculateTotal() + deliveryFee;
 
@@ -1061,6 +1104,11 @@ const initCheckoutPage = () => {
         setDeliveryLoading(true);
         setCheckoutError("");
         distanceKm = await calculateDeliveryDistance(checkoutData.endereco, checkoutData.cep);
+        if (distanceKm === null) {
+          setDeliveryLoading(false);
+          setCheckoutError("CEP invalido. Informe um CEP valido.");
+          return;
+        }
         deliveryFee = Number((distanceKm * VALOR_POR_KM).toFixed(2));
       } catch (error) {
         setDeliveryLoading(false);

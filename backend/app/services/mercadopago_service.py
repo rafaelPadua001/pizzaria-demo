@@ -20,6 +20,8 @@ def _get_access_token(restaurant: Restaurant | None = None) -> str:
     access_token = None
     if restaurant and restaurant.mercadopago_access_token:
         access_token = restaurant.mercadopago_access_token
+    if restaurant and not access_token:
+        raise RuntimeError("Mercado Pago access token nao configurado para o restaurante.")
     if not access_token:
         access_token = os.getenv("MERCADOPAGO_ACCESS_TOKEN") or os.getenv(
             "MERCADO_PAGO_ACCESS_TOKEN"
@@ -69,9 +71,21 @@ def create_preference(
     if not order.total_amount or order.total_amount <= 0:
         raise ValueError("Order total invalido para pagamento.")
 
-    items = _build_items(order)
+    items: list[dict[str, Any]] = []
+    if order.items:
+        try:
+            items = _build_items(order)
+        except ValueError:
+            items = []
     if not items:
-        raise ValueError("Pedido sem itens para pagamento.")
+        items = [
+            {
+                "title": f"Pedido #{order.id}",
+                "quantity": 1,
+                "currency_id": "BRL",
+                "unit_price": float(order.total_amount),
+            }
+        ]
 
     preference_data: dict[str, Any] = {
         "items": items,
@@ -118,7 +132,10 @@ def create_preference(
         response = requests.post(
             MP_PREFERENCE_URL,
             json=preference_data,
-            headers={"Authorization": f"Bearer {access_token}"},
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
+            },
             timeout=10,
         )
     except requests.RequestException:
@@ -135,6 +152,9 @@ def create_preference(
         raise RuntimeError("Resposta invalida do Mercado Pago.")
 
     if response.status_code not in {200, 201}:
+        print("MercadoPago payload:", preference_data)
+        print("MercadoPago status:", response.status_code)
+        print("MercadoPago response:", response.text)
         logger.error(
             "mp_preference_error",
             extra={
