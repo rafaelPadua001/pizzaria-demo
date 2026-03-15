@@ -21,6 +21,7 @@ class AdminResponse(BaseModel):
 
 
 class RestaurantConfigResponse(BaseModel):
+    restaurant_id: int
     name: str
     logo: str | None = None
     primary_color: str | None = None
