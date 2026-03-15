@@ -19,6 +19,7 @@ def get_restaurant_config(db: Session = Depends(get_db)) -> dict:
         )
 
     return {
+        "restaurant_id": restaurant.id,
         "name": restaurant.name,
         "logo": restaurant.logo_url,
         "primary_color": restaurant.primary_color,

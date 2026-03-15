@@ -571,6 +571,59 @@ const RESTAURANT_ENV_URL = "/js/restaurant.env";
 let restaurantEnvPromise = null;
 const CHECKOUT_SESSION_KEY = "checkout_session_id";
 
+// ===== APP STATE (multi-tenant) =====
+const AppState = {
+  slug: null,
+  config: null,
+  menu: [],
+  cart: [],
+  restaurant_id: null,
+};
+
+const getRestaurantSlug = () => {
+  const parts = window.location.pathname.split("/").filter(Boolean);
+  const reserved = new Set([
+    "admin",
+    "admins",
+    "auth",
+    "catalogo",
+    "categories",
+    "checkout",
+    "config",
+    "content",
+    "health",
+    "menu",
+    "orders",
+    "payments",
+    "products",
+    "static",
+    "uploads",
+    "webhook",
+  ]);
+  const candidate = parts[0] || "";
+  if (!candidate || reserved.has(candidate)) {
+    return "pizzaria-demo";
+  }
+  return candidate;
+};
+
+const loadRestaurantConfig = async () => {
+  const slug = getRestaurantSlug();
+  const response = await fetch(`/${slug}/config`);
+  if (!response.ok) {
+    throw new Error("Falha ao carregar configuracao do restaurante.");
+  }
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    throw new Error("Resposta de configuracao invalida.");
+  }
+  const config = await response.json();
+  AppState.slug = slug;
+  AppState.config = config;
+  AppState.restaurant_id = config?.restaurant_id ?? null;
+  return config;
+};
+
 const getOrCreateSessionId = () => {
   const existing = localStorage.getItem(CHECKOUT_SESSION_KEY);
   if (existing) return existing;
@@ -653,9 +706,10 @@ const saveOrderToApi = async ({ cart, checkoutData, totalAmount }) => {
     };
   });
 
-  await loadRestaurantEnv();
-  const { restaurantId, restaurantSlug } = getRestaurantConfig();
-  const tenantPrefix = restaurantSlug ? `/${restaurantSlug}` : "";
+  if (!AppState.slug || !AppState.restaurant_id) {
+    await loadRestaurantConfig();
+  }
+  const tenantPrefix = AppState.slug ? `/${AppState.slug}` : "";
 
   const payload = {
     customer_name: checkoutData.nome || null,
@@ -665,12 +719,12 @@ const saveOrderToApi = async ({ cart, checkoutData, totalAmount }) => {
       ? Number(checkoutData.delivery_fee)
       : null,
     session_id: checkoutData.session_id || null,
-    restaurant_id: restaurantId,
+    restaurant_id: AppState.restaurant_id,
     items,
   };
 
-  if (!restaurantId) {
-    throw new Error("Restaurant ID nao configurado. Verifique js/restaurant.env.");
+  if (!AppState.restaurant_id) {
+    throw new Error("Restaurant ID nao configurado.");
   }
 
   const response = await fetch(`${API_BASE}${tenantPrefix}/orders/public`, {
@@ -1143,7 +1197,16 @@ const getCheckoutUrl = () => {
   return isInCatalog ? "/catalogo/checkout" : "/catalogo/checkout";
 };
 
-document.addEventListener("DOMContentLoaded", initCheckoutPage);
+const initApp = async () => {
+  try {
+    await loadRestaurantConfig();
+  } catch (error) {
+    console.warn("App initialization error", error);
+  }
+  initCheckoutPage();
+};
+
+document.addEventListener("DOMContentLoaded", initApp);
 
 
 
