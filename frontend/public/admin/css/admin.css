@@ -465,7 +465,53 @@ body {
   outline:none;
 }
 
-/* CHIP PAGAMENTO */
+
+/* STATUS CHIP */
+
+.status-chip{
+  padding:6px 12px;
+  border-radius:20px;
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:0.04em;
+  background:#2d2f33;
+  color:#f8f9fa;
+  text-transform:uppercase;
+}
+
+.status-pending{
+  background:#fff3cd;
+  color:#856404;
+}
+
+.status-approved{
+  background:#d4edda;
+  color:#1e7e34;
+}
+
+.status-preparing{
+  background:#cce5ff;
+  color:#004085;
+}
+
+.status-delivering{
+  background:#e8d7ff;
+  color:#5a2d82;
+}
+
+.status-completed{
+  background:#d4edda;
+  color:#1e7e34;
+}
+
+.status-cancelled,
+.status-canceled,
+.status-cancelado,
+.status-cancelada,
+.status-failed{
+  background:#f8d7da;
+  color:#842029;
+}/* CHIP PAGAMENTO */
 
 .payment-chip{
   padding:6px 12px;
@@ -602,3 +648,5 @@ body {
     top: 24px;
   }
 }
+
+
