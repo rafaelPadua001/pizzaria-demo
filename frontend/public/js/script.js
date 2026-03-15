@@ -613,8 +613,9 @@ const loadRestaurantEnv = () => {
         window.PIZZA_RESTAURANT_SLUG = env.PIZZA_RESTAURANT_SLUG;
         localStorage.setItem("restaurantSlug", env.PIZZA_RESTAURANT_SLUG);
       }
-      if (env.PIZZA_RESTAURANT_ID) {
-        const parsedId = Number(env.PIZZA_RESTAURANT_ID);
+      const rawRestaurantId = env.PIZZA_RESTAURANT_ID || env.RESTAURANT_ID;
+      if (rawRestaurantId) {
+        const parsedId = Number(rawRestaurantId);
         if (Number.isFinite(parsedId) && parsedId > 0) {
           window.PIZZA_RESTAURANT_ID = parsedId;
           localStorage.setItem("restaurantId", String(parsedId));
