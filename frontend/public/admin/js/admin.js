@@ -480,7 +480,13 @@
       statusLabel.className = "Status:";
 
       const statusSelect = document.createElement("select");
-      statusSelect.value = order.order_status || "pending";
+      statusSelect.className = "chip-select";
+      const currentStatus = order.order_status || "pending";
+      statusSelect.value = currentStatus;
+      const paymentStatusValue = (order.payment_status || "").toLowerCase();
+      if (paymentStatusValue === "canceled" || paymentStatusValue === "cancelled" || paymentStatusValue === "pending") {
+        statusSelect.disabled = true;
+      }
 
       order_status_options.forEach((status) => {
         const option = document.createElement("option");
@@ -501,9 +507,10 @@
       statusWrapper.appendChild(statusSelect);
 
 
+      const paymentStatus = order.payment_status || "pending";
       const paymentChip = document.createElement("div");
-      paymentChip.className = `payment-chip payment-${order.status}`;
-      paymentChip.textContent = `Pagamento: ${order.status}`;
+      paymentChip.className = `payment-chip payment-${paymentStatus}`;
+      paymentChip.textContent = `Pagamento: ${paymentStatus}`;
 
       statusWrapper.appendChild(paymentChip);
       const items = document.createElement("div");
@@ -1375,5 +1382,7 @@
 
   bootstrap();
 })();
+
+
 
 

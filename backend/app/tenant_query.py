@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import event, or_
+from sqlalchemy import event, or_, true
 from sqlalchemy.orm import Session, with_loader_criteria
 
 from .config.tenant import RESTAURANT_ID
@@ -10,6 +10,8 @@ from .services.tenant_context import get_current_restaurant_id
 
 def _tenant_clause(cls):
     tenant_id = get_current_restaurant_id()
+    if tenant_id is None:
+        return true()
     if RESTAURANT_ID == 1 and tenant_id == RESTAURANT_ID:
         return or_(cls.restaurant_id == tenant_id, cls.restaurant_id.is_(None))
     return cls.restaurant_id == tenant_id
@@ -21,6 +23,8 @@ def _apply_dml_tenant(statement):
         return statement
 
     tenant_id = get_current_restaurant_id()
+    if tenant_id is None:
+        return statement
     if RESTAURANT_ID == 1 and tenant_id == RESTAURANT_ID:
         condition = or_(table.c.restaurant_id == tenant_id, table.c.restaurant_id.is_(None))
     else:

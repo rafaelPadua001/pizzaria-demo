@@ -10,7 +10,7 @@ async function checkPayment() {
 
     try {
         const response = await fetch(
-            `https://pizzaria-demo.onrender.com/payment-status/${paymentId}`
+            `http://localhost:8000/payment-status/${paymentId}`
         );
 
         const data = await response.json();

@@ -1,4 +1,10 @@
 import os
 
-# Default to 0 so multi-tenant flows never depend on a global env restaurant id.
-RESTAURANT_ID = int(os.getenv("RESTAURANT_ID", "0") or 0)
+raw_value = os.getenv("RESTAURANT_ID")
+try:
+    parsed_value = int(raw_value) if raw_value not in (None, "") else None
+except ValueError:
+    parsed_value = None
+
+# Keep None when the env var is missing/invalid/zero to avoid accidental filtering.
+RESTAURANT_ID = parsed_value if parsed_value and parsed_value > 0 else None

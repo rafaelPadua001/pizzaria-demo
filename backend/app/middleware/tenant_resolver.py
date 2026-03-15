@@ -69,7 +69,7 @@ class TenantResolverMiddleware(BaseHTTPMiddleware):
             restaurant_id = restaurant.id
         else:
             restaurant_id = RESTAURANT_ID
-            if restaurant_id:
+            if restaurant_id is not None:
                 with SessionLocal() as db:
                     restaurant = (
                         db.query(Restaurant)

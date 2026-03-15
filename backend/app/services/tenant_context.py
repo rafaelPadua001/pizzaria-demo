@@ -39,6 +39,8 @@ def get_current_restaurant_id() -> int | None:
     if value is not None:
         return int(value)
     # Multi-tenant safety: do not fall back to a global env id when unset.
+    if RESTAURANT_ID is None:
+        return None
     return int(RESTAURANT_ID) if RESTAURANT_ID > 0 else None
 
 
