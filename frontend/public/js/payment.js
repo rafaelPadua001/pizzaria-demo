@@ -9,9 +9,10 @@ async function checkPayment() {
     }
 
     try {
-        const response = await fetch(
-            `https://pizzaria-demo.onrender.com/payment-status/${paymentId}`
-        );
+        const response = await fetch(`/payment-status/${paymentId}`);
+        if (!response.ok) {
+            throw new Error("Falha ao consultar pagamento.");
+        }
 
         const data = await response.json();
 
@@ -25,7 +26,6 @@ async function checkPayment() {
 
 function renderStatus(status) {
     const container = document.getElementById("payment-result");
-        console.log("STATUS RECEBIDO:", status);
     if (status === "approved" || status === "paid" || status === "confirmed") {
         container.innerHTML = `
             <h1 style="color: green;">Pagamento aprovado ✅</h1>

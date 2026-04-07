@@ -14,24 +14,57 @@ logger = logging.getLogger("mercadopago.service")
 MP_PREFERENCE_URL = "https://api.mercadopago.com/checkout/preferences"
 MP_PAYMENT_URL = "https://api.mercadopago.com/v1/payments/{payment_id}"
 MP_MERCHANT_ORDER_URL = "https://api.mercadopago.com/merchant_orders/{merchant_order_id}"
+REQUIRED_BACK_URL_KEYS = ("success", "failure", "pending")
 
 
 def _get_access_token(restaurant: Restaurant | None = None) -> str:
     access_token = None
     if restaurant and restaurant.mercadopago_access_token:
-        access_token = restaurant.mercadopago_access_token
+        access_token = str(restaurant.mercadopago_access_token).strip()
     if restaurant and not access_token:
         raise RuntimeError("Mercado Pago access token nao configurado para o restaurante.")
     if not access_token:
-        access_token = os.getenv("MERCADOPAGO_ACCESS_TOKEN") or os.getenv(
-            "MERCADO_PAGO_ACCESS_TOKEN"
-        )
+        access_token = (
+            os.getenv("MERCADO_PAGO_ACCESS_TOKEN")
+            or os.getenv("MERCADOPAGO_ACCESS_TOKEN")
+            or ""
+        ).strip()
     if not access_token:
-        raise RuntimeError("Mercado Pago access token nao configurado.")
+        raise RuntimeError(
+            "Mercado Pago access token nao configurado. Defina MERCADO_PAGO_ACCESS_TOKEN no .env."
+        )
     return access_token
+
 
 def _is_sandbox(access_token: str) -> bool:
     return access_token.startswith("TEST-")
+
+
+def _normalize_item(title: Any, quantity: Any, unit_price: Any) -> dict[str, Any]:
+    normalized_title = str(title or "").strip()
+    if not normalized_title:
+        raise ValueError("Item sem titulo para preferencia.")
+
+    try:
+        normalized_quantity = int(quantity)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("Quantidade invalida para preferencia.") from exc
+    if normalized_quantity <= 0:
+        raise ValueError("Quantidade invalida para preferencia.")
+
+    try:
+        normalized_unit_price = float(unit_price)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("Preco invalido para preferencia.") from exc
+    if normalized_unit_price <= 0:
+        raise ValueError("Preco invalido para preferencia.")
+
+    return {
+        "title": normalized_title,
+        "quantity": normalized_quantity,
+        "currency_id": "BRL",
+        "unit_price": normalized_unit_price,
+    }
 
 
 def _build_items(order: Order) -> list[dict[str, Any]]:
@@ -40,23 +73,47 @@ def _build_items(order: Order) -> list[dict[str, Any]]:
         title = getattr(item, "name", None) or getattr(item, "product_name", None)
         unit_price = getattr(item, "price", None) or getattr(item, "unit_price", None)
         quantity = getattr(item, "quantity", None)
-
-        if not title:
-            raise ValueError("Item sem titulo para preferencia.")
-        if not quantity or int(quantity) <= 0:
-            raise ValueError("Quantidade invalida para preferencia.")
-        if unit_price is None or float(unit_price) <= 0:
-            raise ValueError("Preco invalido para preferencia.")
-
-        items.append(
-            {
-                "title": str(title),
-                "quantity": int(quantity),
-                "currency_id": "BRL",
-                "unit_price": float(unit_price),
-            }
-        )
+        items.append(_normalize_item(title, quantity, unit_price))
     return items
+
+
+def _build_back_urls(back_urls: dict[str, Any] | None) -> dict[str, str]:
+    sanitized: dict[str, str] = {}
+
+    if back_urls:
+        for key in REQUIRED_BACK_URL_KEYS:
+            value = back_urls.get(key)
+            if isinstance(value, str) and value.strip():
+                sanitized[key] = value.strip()
+
+    frontend_url = (os.getenv("FRONTEND_BASE_URL") or "").strip().rstrip("/")
+    if frontend_url:
+        sanitized = {
+            "success": f"{frontend_url}/payment/success",
+            "failure": f"{frontend_url}/payment/failure",
+            "pending": f"{frontend_url}/payment/pending",
+        }
+
+    missing = [key for key in REQUIRED_BACK_URL_KEYS if not sanitized.get(key)]
+    if missing:
+        raise RuntimeError(
+            "Back URLs do Mercado Pago incompletas. Configure success, failure e pending."
+        )
+
+    return sanitized
+
+
+def _has_valid_url(value: str | None) -> bool:
+    if not isinstance(value, str):
+        return False
+    normalized = value.strip().lower()
+    if not (normalized.startswith("http://") or normalized.startswith("https://")):
+        return False
+    return not (
+        "localhost" in normalized
+        or "127.0.0.1" in normalized
+        or "0.0.0.0" in normalized
+    )
 
 
 def create_preference(
@@ -78,35 +135,17 @@ def create_preference(
         except ValueError:
             items = []
     if not items:
-        items = [
-            {
-                "title": f"Pedido #{order.id}",
-                "quantity": 1,
-                "currency_id": "BRL",
-                "unit_price": float(order.total_amount),
-            }
-        ]
+        items = [_normalize_item(f"Pedido #{order.id}", 1, order.total_amount)]
 
+    normalized_back_urls = _build_back_urls(back_urls)
     preference_data: dict[str, Any] = {
         "items": items,
         "external_reference": str(order.id),
-        "auto_return": "approved",
+        "back_urls": normalized_back_urls,
     }
 
-    if back_urls:
-        preference_data["back_urls"] = back_urls
-
-    frontend_url = os.getenv("FRONTEND_BASE_URL")
-    if preference_data.get("auto_return") == "approved":
-        if not frontend_url:
-            logger.warning("auto_return_enabled_without_frontend_url")
-        else:
-            frontend_url = frontend_url.rstrip("/")
-            preference_data["back_urls"] = {
-                "success": f"{frontend_url}/payment/success",
-                "failure": f"{frontend_url}/payment/failure",
-                "pending": f"{frontend_url}/payment/pending",
-            }
+    if _has_valid_url(normalized_back_urls.get("success")):
+        preference_data["auto_return"] = "approved"
 
     notification_url = notification_url or os.getenv("MERCADOPAGO_NOTIFICATION_URL")
     if notification_url:
@@ -152,19 +191,20 @@ def create_preference(
         raise RuntimeError("Resposta invalida do Mercado Pago.")
 
     if response.status_code not in {200, 201}:
-        print("MercadoPago payload:", preference_data)
-        print("MercadoPago status:", response.status_code)
-        print("MercadoPago response:", response.text)
+        response_text = response.text
         logger.error(
             "mp_preference_error",
             extra={
                 "order_id": order.id,
+                "payload": preference_data,
                 "status_code": response.status_code,
+                "response_text": response_text,
                 "response": response_payload,
             },
         )
         raise RuntimeError(
-            f"Falha ao criar preferencia no Mercado Pago. status={response.status_code}"
+            "Falha ao criar preferencia no Mercado Pago. "
+            f"status={response.status_code} response={response_text}"
         )
 
     preference_id = response_payload.get("id")

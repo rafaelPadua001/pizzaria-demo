@@ -65,23 +65,12 @@ def create_payment(
     payload: PaymentCreate,
     db: Session = Depends(get_db),
 ) -> PaymentResponse:
-    print("DEBUG: create_payment endpoint foi chamado")
-    print("DEBUG: order_id recebido:", payload.order_id)
     order = (
         db.query(Order)
         .execution_options(skip_tenant=True)
         .filter(Order.id == payload.order_id)
         .first()
     )
-    order_ids = [
-        row[0]
-        for row in db.query(Order.id)
-        .execution_options(skip_tenant=True)
-        .order_by(Order.id.desc())
-        .limit(20)
-        .all()
-    ]
-    print("DEBUG: ultimos order_ids no banco:", order_ids)
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pedido nao encontrado.")
 

@@ -567,8 +567,6 @@ window.addEventListener("storage", (event) => {
 const CHECKOUT_KEY = "checkout_data";
 
 const API_BASE = "";
-const RESTAURANT_ENV_URL = "/js/restaurant.env";
-let restaurantEnvPromise = null;
 const CHECKOUT_SESSION_KEY = "checkout_session_id";
 
 // ===== APP STATE (multi-tenant) =====
@@ -636,61 +634,6 @@ const getOrCreateSessionId = () => {
   localStorage.setItem(CHECKOUT_SESSION_KEY, newId);
   return newId;
 };
-
-const parseEnvText = (text) => {
-  const env = {};
-  text.split(/\r?\n/).forEach((line) => {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) return;
-    const eqIndex = trimmed.indexOf("=");
-    if (eqIndex === -1) return;
-    const key = trimmed.slice(0, eqIndex).trim();
-    const value = trimmed.slice(eqIndex + 1).trim();
-    if (key) env[key] = value;
-  });
-  return env;
-};
-
-const loadRestaurantEnv = () => {
-  if (restaurantEnvPromise) return restaurantEnvPromise;
-  restaurantEnvPromise = fetch(RESTAURANT_ENV_URL, { cache: "no-store" })
-    .then((response) => (response.ok ? response.text() : ""))
-    .then((text) => {
-      if (!text) return;
-      const env = parseEnvText(text);
-      if (env.PIZZA_INTERNAL_API_KEY) {
-        window.PIZZA_INTERNAL_API_KEY = env.PIZZA_INTERNAL_API_KEY;
-        localStorage.setItem("pizzariaInternalKey", env.PIZZA_INTERNAL_API_KEY);
-      }
-      if (env.PIZZA_RESTAURANT_SLUG) {
-        window.PIZZA_RESTAURANT_SLUG = env.PIZZA_RESTAURANT_SLUG;
-        localStorage.setItem("restaurantSlug", env.PIZZA_RESTAURANT_SLUG);
-      }
-      const rawRestaurantId = env.PIZZA_RESTAURANT_ID || env.RESTAURANT_ID;
-      if (rawRestaurantId) {
-        const parsedId = Number(rawRestaurantId);
-        if (Number.isFinite(parsedId) && parsedId > 0) {
-          window.PIZZA_RESTAURANT_ID = parsedId;
-          localStorage.setItem("restaurantId", String(parsedId));
-        }
-      }
-    })
-    .catch(() => undefined);
-  return restaurantEnvPromise;
-};
-
-const getRestaurantConfig = () => ({
-  internalApiKey:
-    window.PIZZA_INTERNAL_API_KEY || localStorage.getItem("pizzariaInternalKey") || "",
-  restaurantSlug:
-    window.PIZZA_RESTAURANT_SLUG || localStorage.getItem("restaurantSlug") || "",
-  restaurantId: (() => {
-    const fromWindow = Number(window.PIZZA_RESTAURANT_ID);
-    if (Number.isFinite(fromWindow) && fromWindow > 0) return fromWindow;
-    const fromStorage = Number(localStorage.getItem("restaurantId"));
-    return Number.isFinite(fromStorage) && fromStorage > 0 ? fromStorage : null;
-  })(),
-});
 
 const saveOrderToApi = async ({ cart, checkoutData, totalAmount }) => {
   // Monta os itens do pedido

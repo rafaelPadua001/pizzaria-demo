@@ -103,9 +103,6 @@ for tenant_router in (
     app.include_router(tenant_router, prefix="/{restaurant_slug}")
 
 # DEBUG: lista rotas registradas no startup do app
-for route in app.routes:
-    print(route.path)
-
 @app.get("/admin")
 def serve_admin():
     return FileResponse(PUBLIC_DIR / "admin" / "admin.html")
