@@ -1,6 +1,9 @@
 import os
+import logging
 import time as time_module
 from datetime import datetime, time as dt_time
+
+logger = logging.getLogger("utils.time")
 
 
 def get_current_time() -> dt_time:
@@ -9,12 +12,10 @@ def get_current_time() -> dt_time:
         try:
             hours, minutes = map(int, fake_time.split(":"))
             current = dt_time(hours, minutes)
-            print("DEBUG CURRENT TIME:", current)
+            logger.debug("Usando FAKE_TIME configurado: %s", current)
             return current
         except Exception:
             current = datetime.fromtimestamp(time_module.time()).time()
-            print("DEBUG CURRENT TIME:", current)
+            logger.warning("FAKE_TIME invalido. Usando horario atual.", exc_info=True)
             return current
-    current = datetime.fromtimestamp(time_module.time()).time()
-    print("DEBUG CURRENT TIME:", current)
-    return current
+    return datetime.fromtimestamp(time_module.time()).time()

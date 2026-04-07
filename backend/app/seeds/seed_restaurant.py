@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import os
+import logging
 
 from sqlalchemy.orm import Session
 
 from ..database import SessionLocal
 from ..models import Restaurant
+
+logger = logging.getLogger("seeds.restaurant")
 
 
 def seed_restaurant(db: Session) -> None:
@@ -30,7 +33,7 @@ def main() -> None:
     db = SessionLocal()
     try:
         seed_restaurant(db)
-        print("Seed de restaurante concluida.")
+        logger.info("Seed de restaurante concluida.")
     finally:
         db.close()
 
